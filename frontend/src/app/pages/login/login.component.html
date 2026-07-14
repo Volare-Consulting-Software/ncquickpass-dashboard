@@ -1,7 +1,7 @@
 <div class="login-wrap">
   <form class="login-card" (ngSubmit)="submit()">
-    <h1>NC Quick Pass</h1>
-    <p class="subtitle">HOV Dashboard</p>
+    <img class="login-logo" src="assets/ncta-logo.svg" alt="NC Quick Pass" />
+    <p class="subtitle">Dashboard</p>
 
     @if (error(); as err) {
       <div class="alert" role="alert">{{ err }}</div>
@@ -36,8 +36,8 @@
     </button>
 
     <p class="fineprint">
-      Your credentials are sent once to the local backend and used only to obtain a session
-      token. They are never stored.
+      Your credentials are never saved. They are utilized by the backend to proxy api calls to
+      ncquickpass.com on your behalf.
     </p>
   </form>
 </div>

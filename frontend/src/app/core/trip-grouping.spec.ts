@@ -1,5 +1,5 @@
 import { TransactionView } from './models';
-import { groupIntoTrips, isHovRoute } from './trip-grouping';
+import { groupIntoTrips, highwayOf, isHovRoute, replenishments } from './trip-grouping';
 
 function toll(overrides: Partial<TransactionView>): TransactionView {
   return {
@@ -16,7 +16,7 @@ function toll(overrides: Partial<TransactionView>): TransactionView {
   };
 }
 
-describe('isHovRoute', () => {
+describe('isHovRoute / highwayOf', () => {
   it('isHovRoute_withMarkerPresent_returnsTrue', () => {
     expect(isHovRoute('I-77 EL Exit 28')).toBe(true);
     expect(isHovRoute('77 el gilead')).toBe(true);
@@ -26,6 +26,11 @@ describe('isHovRoute', () => {
     expect(isHovRoute('Ghent South / AS')).toBe(false);
     expect(isHovRoute('')).toBe(false);
     expect(isHovRoute(null)).toBe(false);
+  });
+
+  it('highwayOf_withI77Exit_returnsI77_otherwiseOther', () => {
+    expect(highwayOf('I-77 EL Exit 16')).toBe('I-77');
+    expect(highwayOf('Ghent South / AS')).toBe('Other');
   });
 });
 
@@ -40,6 +45,7 @@ describe('groupIntoTrips', () => {
     expect(trips.length).toBe(1);
     expect(trips[0].transactions.length).toBe(3);
     expect(trips[0].total).toBe(4.5);
+    expect(trips[0].highway).toBe('I-77');
   });
 
   it('groupIntoTrips_withGapOverFiveMinutes_startsNewTrip', () => {
@@ -48,8 +54,7 @@ describe('groupIntoTrips', () => {
       toll({ transactionDate: '2026-07-11T10:03:00' }),
       toll({ transactionDate: '2026-07-11T10:20:00' }),
     ];
-    const trips = groupIntoTrips(txns);
-    expect(trips.length).toBe(2);
+    expect(groupIntoTrips(txns).length).toBe(2);
   });
 
   it('groupIntoTrips_multipleTrips_returnsNewestFirst', () => {
@@ -62,10 +67,26 @@ describe('groupIntoTrips', () => {
     expect(trips[0].start).toBe('2026-07-12T09:00:00');
   });
 
-  it('groupIntoTrips_withNonHovAndNonTollRows_ignoresThem', () => {
+  it('groupIntoTrips_withDifferentHighwaysInWindow_splitsByHighway', () => {
+    const txns = [
+      toll({ exitLocation: 'I-77 EL Exit 1', transactionDate: '2026-07-11T10:00:00' }),
+      toll({ exitLocation: 'Ghent South / AS', transactionDate: '2026-07-11T10:02:00' }),
+    ];
+    const trips = groupIntoTrips(txns);
+    expect(trips.length).toBe(2);
+    expect(trips.map((t) => t.highway).sort()).toEqual(['I-77', 'Other']);
+  });
+
+  it('groupIntoTrips_withNonI77Tolls_includesThemAsOther', () => {
+    const txns = [toll({ exitLocation: 'Ghent South / AS' })];
+    const trips = groupIntoTrips(txns);
+    expect(trips.length).toBe(1);
+    expect(trips[0].highway).toBe('Other');
+  });
+
+  it('groupIntoTrips_ignoresReplenishRows', () => {
     const txns = [
       toll({ transactionDate: '2026-07-11T10:00:00' }),
-      toll({ exitLocation: 'Ghent South / AS', transactionDate: '2026-07-11T10:01:00' }),
       toll({ activityTypeName: 'Replenish', transactionDate: '2026-07-11T10:02:00' }),
     ];
     const trips = groupIntoTrips(txns);
@@ -79,5 +100,27 @@ describe('groupIntoTrips', () => {
       toll({ transactionDate: '2026-07-11T10:05:00' }),
     ];
     expect(groupIntoTrips(txns).length).toBe(1);
+  });
+});
+
+describe('replenishments', () => {
+  it('replenishments_returnsOnlyReplenishNewestFirst', () => {
+    const txns = [
+      toll({ transactionDate: '2026-07-11T10:00:00' }),
+      toll({
+        activityTypeName: 'Replenish',
+        transactionDate: '2026-07-05T08:00:00',
+        creditAmount: 20,
+      }),
+      toll({
+        activityTypeName: 'Replenish',
+        transactionDate: '2026-07-12T08:00:00',
+        creditAmount: 40,
+      }),
+    ];
+    const result = replenishments(txns);
+    expect(result.length).toBe(2);
+    expect(result[0].creditAmount).toBe(40);
+    expect(result[1].creditAmount).toBe(20);
   });
 });

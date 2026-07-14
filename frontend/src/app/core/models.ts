@@ -28,15 +28,22 @@ export interface TransactionView {
   vehicleClass: string;
 }
 
-/** A group of I-77 tolls that occurred within the grouping window of each other. */
+/** A group of tolls (one highway) that occurred within the grouping window. */
 export interface Trip {
   start: string;
   end: string;
   total: number;
+  highway: string;
   transactions: TransactionView[];
 }
 
 export interface AuthState {
   authenticated: boolean;
   accountId?: string;
+}
+
+export interface AccountSummary {
+  accountNumber: string;
+  currentBalance: number | null;
+  accountStatus: string | null;
 }

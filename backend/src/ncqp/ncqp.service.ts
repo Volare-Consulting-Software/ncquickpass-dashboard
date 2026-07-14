@@ -133,17 +133,34 @@ export class NcqpService {
     }
   }
 
-  /** Cancel an HOV declaration. Response body is the bare string "Canceled". */
+  /**
+   * Cancel an HOV declaration. Response body is the bare string "Canceled".
+   * Uses native fetch (not axios) so the bodyless PUT carries NO Content-Type —
+   * axios forces `application/x-www-form-urlencoded`, which makes NCQP 500.
+   */
   async cancelHov(token: string, declarationId: string, userId: string): Promise<string> {
+    const base = this.config.get<string>('NCQP_BASE_URL', 'https://secure.ncquickpass.com');
+    const url =
+      `${base}/external/api/v2/AccountManagementAPI/declarations/cancellation` +
+      `?declarationId=${encodeURIComponent(declarationId)}&userId=${encodeURIComponent(userId)}`;
     try {
-      const res = await this.http.put(
-        '/external/api/v2/AccountManagementAPI/declarations/cancellation',
-        null,
-        { headers: this.authHeaders(token), params: { declarationId, userId } },
-      );
-      return typeof res.data === 'string' ? res.data.replace(/"/g, '') : 'Canceled';
+      const resp = await fetch(url, {
+        method: 'PUT',
+        headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+      });
+      const text = await resp.text();
+      if (!resp.ok) {
+        this.logger.warn(`NCQP cancelHov -> ${resp.status} :: ${text.slice(0, 300)}`);
+        if ([400, 401, 403].includes(resp.status)) {
+          throw new UnauthorizedException('Failed to cancel HOV declaration');
+        }
+        throw new HttpException('Failed to cancel HOV declaration', resp.status);
+      }
+      return text.replace(/"/g, '') || 'Canceled';
     } catch (e) {
-      throw this.mapError(e, 'Failed to cancel HOV declaration', 'cancelHov');
+      if (e instanceof HttpException) throw e;
+      this.logger.error(`NCQP cancelHov failed: ${(e as Error).message}`);
+      throw new InternalServerErrorException('Failed to cancel HOV declaration');
     }
   }
 
@@ -184,7 +201,11 @@ export class NcqpService {
     const err = e as AxiosError;
     if (err?.isAxiosError && err.response) {
       const status = err.response.status;
-      this.logger.warn(`NCQP ${op} -> ${status}`);
+      const body =
+        typeof err.response.data === 'string'
+          ? err.response.data
+          : JSON.stringify(err.response.data);
+      this.logger.warn(`NCQP ${op} -> ${status} :: ${(body ?? '').slice(0, 300)}`);
       if (status === 400 || status === 401 || status === 403) {
         return new UnauthorizedException(message);
       }

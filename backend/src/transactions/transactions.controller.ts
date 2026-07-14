@@ -9,13 +9,13 @@ import { TransactionView, TransactionsService } from './transactions.service';
 export class TransactionsController {
   constructor(private readonly transactions: TransactionsService) {}
 
-  /** All transactions in the last `days` (default 90, capped at 366). */
+  /** All transactions in the last `days` (default 90, capped at ~10 years). */
   @Get()
   search(
     @CurrentSession() session: NcqpSession,
     @Query('days', new DefaultValuePipe(90), ParseIntPipe) days: number,
   ): Promise<TransactionView[]> {
-    const clamped = Math.min(Math.max(days, 1), 366);
+    const clamped = Math.min(Math.max(days, 1), 3650);
     return this.transactions.search(session, clamped);
   }
 }

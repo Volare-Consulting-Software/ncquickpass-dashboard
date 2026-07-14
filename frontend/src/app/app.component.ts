@@ -5,6 +5,9 @@ import { RouterOutlet } from '@angular/router';
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet],
-  template: '<router-outlet />',
+  template: `
+    <router-outlet />
+    <img class="volare-watermark" src="assets/volare-logo.png" alt="A Volare Solution" />
+  `,
 })
 export class AppComponent {}

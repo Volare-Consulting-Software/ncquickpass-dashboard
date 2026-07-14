@@ -30,6 +30,7 @@
               "src/assets"
             ],
             "styles": [
+              "node_modules/flatpickr/dist/flatpickr.min.css",
               "src/styles.scss"
             ],
             "scripts": []
@@ -44,8 +45,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "2kb",
-                  "maximumError": "4kb"
+                  "maximumWarning": "4kb",
+                  "maximumError": "8kb"
                 }
               ],
               "outputHashing": "all"
@@ -90,6 +91,7 @@
               "src/assets"
             ],
             "styles": [
+              "node_modules/flatpickr/dist/flatpickr.min.css",
               "src/styles.scss"
             ],
             "scripts": []

@@ -17,7 +17,7 @@ export interface TransactionView {
 }
 
 const PAGE_SIZE = 100;
-const MAX_PAGES = 50; // hard backstop: up to 5,000 rows
+const MAX_PAGES = 300; // hard backstop: up to 30,000 rows (covers "Forever")
 
 function fmtDate(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');

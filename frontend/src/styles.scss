@@ -6,8 +6,9 @@
   --border: #e2e6ea;
   --text: #1c2530;
   --muted: #6b7683;
-  --accent: #0f7d8c; /* NC Quick Pass teal */
-  --accent-dark: #0b5c67;
+  --accent: #5e27d2; /* Volare ECU Purple */
+  --accent-dark: #4e1fb0;
+  --accent-dim: #efe9fb;
   --danger: #b3261e;
 }
 
@@ -115,4 +116,60 @@ button {
   color: var(--muted);
   font-size: 0.9rem;
   padding: 0.5rem 0;
+}
+
+/* "A Volare Solution" watermark — fixed, subtle, non-interactive, on every page.
+   brightness(0) renders the white wordmark solid black for the light background. */
+.volare-watermark {
+  position: fixed;
+  bottom: 1rem;
+  right: 1.25rem;
+  height: 22px;
+  width: auto;
+  opacity: 0.5;
+  pointer-events: none;
+  user-select: none;
+  z-index: 30;
+  filter: brightness(0);
+}
+
+/* The flatpickr date/time field. Styled globally (not component-scoped) because
+   flatpickr swaps in a runtime-created input that lacks Angular's scope attr.
+   Matches the themed range dropdown. */
+.date-field {
+  min-width: 12rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.date-field::placeholder {
+  color: var(--muted);
+}
+.date-field:hover {
+  border-color: var(--accent);
+}
+.date-field:focus,
+.date-field.active {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-dim);
+}
+
+/* flatpickr accent overrides to match the app theme */
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.flatpickr-day.today {
+  border-color: var(--accent);
+}
+.flatpickr-time input:hover,
+.flatpickr-time .flatpickr-am-pm:hover {
+  background: var(--bg);
 }
