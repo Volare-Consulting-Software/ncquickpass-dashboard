@@ -1,4 +1,4 @@
-import { TransactionView } from './models';
+import { TransactionView } from './models/TransactionView';
 import { groupIntoTrips, highwayOf, isHovRoute, replenishments } from './trip-grouping';
 
 function toll(overrides: Partial<TransactionView>): TransactionView {

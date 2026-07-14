@@ -1,4 +1,5 @@
-import { TransactionView, Trip } from './models';
+import { TransactionView } from './models/TransactionView';
+import { Trip } from './models/Trip';
 
 /** Substring (case-insensitive) that marks an I-77 Express Lanes exit. */
 export const HOV_ROUTE_MARKER = '77 el';

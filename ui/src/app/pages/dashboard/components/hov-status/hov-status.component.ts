@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { DeclarationView, VehicleView } from '../../../../core/models';
+import { DeclarationView } from '../../../../core/models/DeclarationView';
+import { VehicleView } from '../../../../core/models/VehicleView';
 import { DateTimePickerDirective } from '../../../../core/date-time-picker.directive';
 
 export interface ActivateRequest {

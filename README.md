@@ -10,11 +10,16 @@ from a single page.
 
 ## Architecture
 
-```
-┌──────────────────┐   same-origin /api    ┌──────────────────┐   Bearer JWT    ┌──────────────────┐
-│  Angular 17 SPA  │ ────────────────────► │   NestJS BFF     │ ──────────────► │  NC Quick Pass   │
-│  (ui/)           │ ◄──────────────────── │   (api/)         │ ◄────────────── │  secure.ncquick… │
-└──────────────────┘   HttpOnly cookie      └──────────────────┘                 └──────────────────┘
+```mermaid
+flowchart LR
+    SPA["Angular 17 SPA<br/>(ui/)"]
+    BFF["NestJS BFF<br/>(api/)"]
+    NCQP["NC Quick Pass<br/>secure.ncquickpass.com"]
+
+    SPA -->|"same-origin /api"| BFF
+    BFF -->|"Bearer JWT"| NCQP
+    NCQP -.->|"JSON"| BFF
+    BFF -.->|"JSON + HttpOnly cookie<br/>(token never in JS)"| SPA
 ```
 
 The **NestJS backend-for-frontend (BFF)** exists for two reasons:

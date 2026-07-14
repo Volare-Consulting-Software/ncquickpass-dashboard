@@ -1,7 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { DeclarationView, VehicleView } from '../models';
+import { DeclarationView } from '../models/DeclarationView';
+import { VehicleView } from '../models/VehicleView';
 
 @Injectable({ providedIn: 'root' })
 export class HovService {
