@@ -3,6 +3,17 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { PrismaService } from './../src/prisma/prisma.service';
+
+// These routes don't touch the database, so stub PrismaService: it avoids a real
+// SQLite connection and sidesteps Prisma 7's WASM query compiler, which needs
+// dynamic import() that Jest can't load without --experimental-vm-modules.
+const prismaStub = {
+  onModuleInit: async () => undefined,
+  onModuleDestroy: async () => undefined,
+  $connect: async () => undefined,
+  $disconnect: async () => undefined,
+};
 
 describe('AppModule (e2e)', () => {
   let app: INestApplication<App>;
@@ -10,7 +21,10 @@ describe('AppModule (e2e)', () => {
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(PrismaService)
+      .useValue(prismaStub)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api');

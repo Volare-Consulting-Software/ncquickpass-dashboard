@@ -1,0 +1,17 @@
+// NC Quick Pass dashboard — persistence for the weekly HOV schedule feature.
+// Multi-file schema: models live one-per-file under prisma/tables/. This main
+// file holds only the generator and datasource (see prisma.config.ts for the
+// DATABASE_URL). Prisma 7 uses a driver adapter (better-sqlite3, wired in
+// PrismaService) — there is no query-engine binary.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  runtime             = "nodejs"
+  moduleFormat        = "cjs"
+  importFileExtension = ""
+}
+
+datasource db {
+  provider = "sqlite"
+}

@@ -21,8 +21,14 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       NCQP_BASE_URL: https://secure.ncquickpass.com
       NCQP_CLIENT_ID: AMSExternalngAuthApp
+      # SQLite lives on the named volume below so it survives image rebuilds.
+      # `prisma migrate deploy` (run at startup) only applies pending migrations,
+      # so the file is never overwritten.
+      DATABASE_URL: file:/data/ncquickpass.db
     expose:
       - '3000'
+    volumes:
+      - ncquickpass-data:/data
     restart: unless-stopped
 
   web:
@@ -32,3 +38,7 @@ services:
     ports:
       - '8080:80'
     restart: unless-stopped
+
+volumes:
+  # Persists the SQLite database across container/image rebuilds.
+  ncquickpass-data:
