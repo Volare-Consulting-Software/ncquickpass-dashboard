@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsArray, IsBoolean, IsInt, Max, Min, ValidateNested } from 'class-validator';
-import { TimeRangeDto } from './time-range.dto';
+import { TimeRangeDto } from './TimeRangeDto';
 
 /** One day of the recurring week. allDay ignores ranges (whole day is active). */
 export class ScheduleDayDto {

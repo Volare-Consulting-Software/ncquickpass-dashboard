@@ -8,7 +8,7 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
-import { ScheduleDayDto } from './schedule-day.dto';
+import { ScheduleDayDto } from './ScheduleDayDto';
 
 /** Upsert the weekly schedule for one transponder. */
 export class PutScheduleDto {

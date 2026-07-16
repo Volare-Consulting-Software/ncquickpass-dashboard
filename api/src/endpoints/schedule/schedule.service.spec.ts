@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { PutScheduleDto } from '../../models/schedule/put-schedule.dto';
+import { PutScheduleDto } from '../../models/schedule/PutScheduleDto';
 import { ScheduleService } from './schedule.service';
 
 /** Minimal Prisma test double capturing the calls the service makes. */

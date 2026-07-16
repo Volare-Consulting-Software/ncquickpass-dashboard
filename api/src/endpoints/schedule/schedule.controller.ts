@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Put, Query, UseGuards } from '@nestjs/co
 import { AuthGuard } from '../auth/session/auth.guard';
 import { CurrentSession } from '../auth/session/current-session.decorator';
 import type { NcqpSession } from '../auth/session/session';
-import { PutScheduleDto } from '../../models/schedule/put-schedule.dto';
+import { PutScheduleDto } from '../../models/schedule/PutScheduleDto';
 import { ScheduleService, ScheduleView } from './schedule.service';
 
 @Controller('hov/schedule')

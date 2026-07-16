@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { Prisma } from '../../generated/prisma/client';
-import { PutScheduleDto } from '../../models/schedule/put-schedule.dto';
+import { PutScheduleDto } from '../../models/schedule/PutScheduleDto';
 
 const DEFAULT_TIMEZONE = 'America/New_York';
 
