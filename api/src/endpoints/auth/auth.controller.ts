@@ -2,7 +2,7 @@ import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { CookieOptions, Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { LoginDto } from '../../models/auth/login.dto';
+import { LoginDto } from '../../models/auth/LoginDto';
 import { SESSION_COOKIE, isSessionValid, parseSession } from './session/session';
 
 @Controller('auth')

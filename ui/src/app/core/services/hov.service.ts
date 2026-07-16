@@ -1,8 +1,18 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { DeclarationView } from '../models/DeclarationView';
 import { VehicleView } from '../models/VehicleView';
+import { WeeklySchedule } from '../models/WeeklySchedule';
+import { ScheduleDay } from '../models/ScheduleDay';
+
+/** Body accepted by PUT /api/hov/schedule. */
+export interface PutSchedule {
+  transponderNumber: string;
+  enabled: boolean;
+  timezone?: string;
+  days: ScheduleDay[];
+}
 
 @Injectable({ providedIn: 'root' })
 export class HovService {
@@ -29,5 +39,19 @@ export class HovService {
 
   cancel(declarationId: string): Observable<{ result: string }> {
     return this.http.put<{ result: string }>('/api/hov/cancel', { declarationId });
+  }
+
+  getSchedule(transponderNumber: string): Observable<WeeklySchedule> {
+    const params = new HttpParams().set('transponder', transponderNumber);
+    return this.http.get<WeeklySchedule>('/api/hov/schedule', { params });
+  }
+
+  putSchedule(schedule: PutSchedule): Observable<WeeklySchedule> {
+    return this.http.put<WeeklySchedule>('/api/hov/schedule', schedule);
+  }
+
+  deleteSchedule(transponderNumber: string): Observable<{ deleted: boolean }> {
+    const params = new HttpParams().set('transponder', transponderNumber);
+    return this.http.delete<{ deleted: boolean }>('/api/hov/schedule', { params });
   }
 }

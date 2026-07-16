@@ -36,6 +36,7 @@
           [busyTransponder]="busyTransponder()"
           (activate)="onActivate($event)"
           (cancel)="onCancel($event)"
+          (openSchedule)="openSchedule()"
         />
 
         <app-account-summary
@@ -54,3 +55,10 @@
     </div>
   }
 </main>
+
+<app-weekly-schedule-drawer
+  [open]="scheduleDrawerOpen()"
+  [vehicles]="vehicles()"
+  (close)="closeSchedule()"
+  (saved)="onScheduleSaved($event)"
+/>

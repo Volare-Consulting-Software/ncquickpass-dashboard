@@ -5,6 +5,7 @@ import { NcqpModule } from './endpoints/ncqp/ncqp.module';
 import { AuthModule } from './endpoints/auth/auth.module';
 import { AccountModule } from './endpoints/account/account.module';
 import { HovModule } from './endpoints/hov/hov.module';
+import { HovScheduleModule } from './endpoints/schedule/schedule.module';
 import { TransactionsModule } from './endpoints/transactions/transactions.module';
 import { HealthController } from './health.controller';
 
@@ -16,6 +17,7 @@ import { HealthController } from './health.controller';
     AuthModule,
     AccountModule,
     HovModule,
+    HovScheduleModule,
     TransactionsModule,
   ],
   controllers: [HealthController],

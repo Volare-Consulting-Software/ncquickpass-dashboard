@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { NcqpService } from '../ncqp/ncqp.service';
 import { NcqpDeclaration, NcqpVehicleTag } from '../../models/ncqp/ncqp.types';
 import { NcqpSession } from '../auth/session/session';
-import { ActivateDto } from '../../models/hov/activate.dto';
+import { ActivateDto } from '../../models/hov/ActivateDto';
 
 export interface VehicleView {
   transponderNumber: string;
