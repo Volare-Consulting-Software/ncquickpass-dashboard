@@ -55,7 +55,6 @@ export class WeeklyScheduleDrawerComponent implements OnChanges {
   @Output() saved = new EventEmitter<string>();
 
   selectedTransponder = '';
-  enabled = false;
   credentialOnFile = false;
   password = '';
   private timezone = 'America/New_York';
@@ -105,9 +104,9 @@ export class WeeklyScheduleDrawerComponent implements OnChanges {
     this.error.set(null);
     const days = this.buildDays();
     if (days === null) return; // validation error already set
-    // Enabling automatic scheduling for the first time needs the password to arm
-    // the credential vault. Prompt for it before saving.
-    if (this.enabled && !this.credentialOnFile && !this.password) {
+    // A schedule with active days runs automatically, which needs the password to
+    // arm the credential vault the first time. Prompt for it before saving.
+    if (days.length > 0 && !this.credentialOnFile && !this.password) {
       this.passwordPromptOpen.set(true);
       return;
     }
@@ -134,7 +133,7 @@ export class WeeklyScheduleDrawerComponent implements OnChanges {
     this.saving.set(true);
     const body: PutSchedule = {
       transponderNumber: this.selectedTransponder,
-      enabled: this.enabled,
+      enabled: days.length > 0,
       timezone: this.timezone,
       days,
       ...(this.password ? { password: this.password } : {}),
@@ -189,7 +188,6 @@ export class WeeklyScheduleDrawerComponent implements OnChanges {
   }
 
   private apply(schedule: WeeklySchedule): void {
-    this.enabled = schedule.enabled;
     this.timezone = schedule.timezone;
     this.credentialOnFile = schedule.credentialOnFile;
     this.scheduleExists = schedule.days.length > 0;

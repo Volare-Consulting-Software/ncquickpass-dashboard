@@ -11,14 +11,9 @@
       />
     </div>
 
-    <label class="enable-row">
-      <input type="checkbox" [(ngModel)]="enabled" />
-      <span>Enable automatic scheduling for this vehicle</span>
-    </label>
-
     <p class="hint">
-      Choose the days and times HOV should be active. This schedule is saved per vehicle and
-      repeats every week.
+      Choose the days and times HOV should be active. This schedule is saved per vehicle, repeats
+      every week, and runs automatically.
     </p>
 
     @if (loading()) {
@@ -88,9 +83,6 @@
       </button>
       <button type="button" class="btn-danger" (click)="remove()" [disabled]="saving()">
         Remove
-      </button>
-      <button type="button" class="btn-ghost" (click)="close.emit()" [disabled]="saving()">
-        Cancel
       </button>
     </div>
 
