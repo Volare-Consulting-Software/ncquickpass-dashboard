@@ -26,12 +26,12 @@ interface KmsClient {
  * Stores NCQP credentials encrypted at rest so the unattended cron can
  * re-authenticate on a tenant's behalf. Two backends, chosen by config:
  *
- * - **KMS** (CREDENTIAL_KEY_ARN set): AWS KMS envelope encryption via the AWS
+ * - **KMS** (CREDENTIAL_KEY set): AWS KMS envelope encryption via the AWS
  *   Encryption SDK. The key never leaves KMS; decryption is governed by the KMS
  *   key policy (grant only the job role — no human principals), and every
  *   decrypt is logged to CloudTrail with the tenant's accountId as encryption
  *   context. This is the production posture.
- * - **local** (SCHEDULE_ENCRYPTION_KEY set): AES-256-GCM with a key from the
+ * - **local** (CREDENTIAL_KEY_LOCAL set): AES-256-GCM with a key from the
  *   environment. For local/dev only — anyone who can read the environment can
  *   decrypt.
  *
@@ -49,13 +49,13 @@ export class CredentialVaultService {
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
   ) {
-    this.keyArn = this.config.get<string>('CREDENTIAL_KEY_ARN') || null;
-    const raw = this.config.get<string>('SCHEDULE_ENCRYPTION_KEY') ?? '';
+    this.keyArn = this.config.get<string>('CREDENTIAL_KEY') || null;
+    const raw = this.config.get<string>('CREDENTIAL_KEY_LOCAL') ?? '';
     this.localKey = /^[0-9a-fA-F]{64}$/.test(raw) ? Buffer.from(raw, 'hex') : null;
 
     if (this.backend === 'none') {
       this.logger.warn(
-        'No credential encryption configured (CREDENTIAL_KEY_ARN or SCHEDULE_ENCRYPTION_KEY) — storage disabled',
+        'No credential encryption configured (CREDENTIAL_KEY or CREDENTIAL_KEY_LOCAL) — storage disabled',
       );
     } else {
       this.logger.log(`Credential vault backend: ${this.backend}`);
@@ -110,7 +110,7 @@ export class CredentialVaultService {
     const isLocal = row.iv !== '' && row.authTag !== '';
     let plaintext: string;
     if (isLocal) {
-      if (!this.localKey) throw new Error('SCHEDULE_ENCRYPTION_KEY required to decrypt this credential');
+      if (!this.localKey) throw new Error('CREDENTIAL_KEY_LOCAL required to decrypt this credential');
       const decipher = createDecipheriv('aes-256-gcm', this.localKey, Buffer.from(row.iv, 'base64'));
       decipher.setAuthTag(Buffer.from(row.authTag, 'base64'));
       plaintext = Buffer.concat([
@@ -118,7 +118,7 @@ export class CredentialVaultService {
         decipher.final(),
       ]).toString('utf8');
     } else {
-      if (!this.keyArn) throw new Error('CREDENTIAL_KEY_ARN required to decrypt this credential');
+      if (!this.keyArn) throw new Error('CREDENTIAL_KEY required to decrypt this credential');
       plaintext = await this.kmsDecrypt(accountId, row.ciphertext);
     }
     return JSON.parse(plaintext) as NcqpCredentials;

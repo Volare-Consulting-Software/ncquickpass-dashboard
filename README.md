@@ -55,10 +55,10 @@ The unattended scheduler has to act while you're away, so — only if you opt in
 Pass credentials are stored encrypted:
 
 - Stored **only** when you enable a weekly schedule and re-enter your password to authorize it.
-- Encrypted with **AWS KMS** in production (`CREDENTIAL_KEY_ARN`): the key never leaves KMS, the
-  app only holds ciphertext, and the KMS key policy grants decryption to the scheduler's IAM role
+- Encrypted with **AWS KMS** in production (`CREDENTIAL_KEY`): the key never leaves KMS, the app
+  only holds ciphertext, and the KMS key policy grants decryption to the scheduler's IAM role
   alone — no human principals. Every decrypt is logged to CloudTrail with the tenant's account as
-  encryption context. A local AES-256-GCM key (`SCHEDULE_ENCRYPTION_KEY`) is available for dev.
+  encryption context. A local AES-256-GCM key (`CREDENTIAL_KEY_LOCAL`) is the dev fallback.
 - Decrypted only transiently in memory to obtain a session token, never logged in plaintext,
   never returned to the browser, and deleted when you remove your schedule.
 

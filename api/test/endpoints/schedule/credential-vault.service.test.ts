@@ -5,7 +5,7 @@ import { PrismaService } from '../../../src/prisma/prisma.service';
 const KEY = 'a'.repeat(64); // 32 bytes hex
 
 function config(key: string | undefined): ConfigService {
-  return { get: (k: string) => (k === 'SCHEDULE_ENCRYPTION_KEY' ? key : undefined) } as unknown as ConfigService;
+  return { get: (k: string) => (k === 'CREDENTIAL_KEY_LOCAL' ? key : undefined) } as unknown as ConfigService;
 }
 
 function prismaWithStore() {
