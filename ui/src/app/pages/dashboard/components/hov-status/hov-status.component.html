@@ -1,6 +1,7 @@
 <section class="card">
-  <header class="card-head">
+  <header class="card-head card-head-row">
     <h2>HOV Status</h2>
+    <button class="btn-ghost schedule-btn" (click)="openSchedule.emit()">Weekly Schedule</button>
   </header>
 
   @if (vehicles.length === 0) {

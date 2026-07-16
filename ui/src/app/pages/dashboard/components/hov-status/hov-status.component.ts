@@ -25,6 +25,7 @@ export class HovStatusComponent implements OnInit, OnDestroy {
 
   @Output() activate = new EventEmitter<ActivateRequest>();
   @Output() cancel = new EventEmitter<string>();
+  @Output() openSchedule = new EventEmitter<void>();
 
   /** Ticks every second to drive the "Pending" countdown. */
   private readonly now = signal(Date.now());

@@ -15,6 +15,7 @@ import { groupIntoTrips, replenishments } from '../../core/trip-grouping';
 import { ActivateRequest, HovStatusComponent } from './components/hov-status/hov-status.component';
 import { TripListComponent } from './components/trip-list/trip-list.component';
 import { AccountSummaryComponent } from './components/account-summary/account-summary.component';
+import { WeeklyScheduleDrawerComponent } from './components/weekly-schedule-drawer/weekly-schedule-drawer.component';
 
 export interface RangeOption {
   label: string;
@@ -35,7 +36,12 @@ const DAY_OPTIONS: RangeOption[] = [
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [HovStatusComponent, TripListComponent, AccountSummaryComponent],
+  imports: [
+    HovStatusComponent,
+    TripListComponent,
+    AccountSummaryComponent,
+    WeeklyScheduleDrawerComponent,
+  ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
@@ -62,6 +68,7 @@ export class DashboardComponent implements OnInit {
   readonly error = signal<string | null>(null);
   readonly busyTransponder = signal<string | null>(null);
   readonly actionMessage = signal<string | null>(null);
+  readonly scheduleDrawerOpen = signal(false);
 
   ngOnInit(): void {
     this.loadAll();
@@ -119,6 +126,18 @@ export class DashboardComponent implements OnInit {
       next: () => this.afterHovChange('HOV declaration canceled.'),
       error: (err) => this.handleActionError(err, 'Failed to cancel HOV declaration.'),
     });
+  }
+
+  openSchedule(): void {
+    this.scheduleDrawerOpen.set(true);
+  }
+
+  closeSchedule(): void {
+    this.scheduleDrawerOpen.set(false);
+  }
+
+  onScheduleSaved(message: string): void {
+    this.actionMessage.set(message);
   }
 
   logout(): void {
