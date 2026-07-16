@@ -1,0 +1,16 @@
+/// One weekly schedule per (account, transponder). accountId is the tenant key.
+model WeeklySchedule {
+  id                String   @id @default(cuid())
+  accountId         String // TENANT KEY (NCQP account number)
+  transponderNumber String
+  enabled           Boolean  @default(true)
+  timezone          String   @default("America/New_York") // NC = Eastern
+  horizonDays       Int      @default(7)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  days ScheduleDay[]
+
+  @@unique([accountId, transponderNumber])
+  @@index([accountId])
+}

@@ -6,3 +6,6 @@ dist
 .git
 coverage
 test
+src/generated
+*.db
+*.db-journal

@@ -1,0 +1,12 @@
+/// A day of the recurring week. allDay=true means the whole day (no TimeRange rows).
+model ScheduleDay {
+  id         String  @id @default(cuid())
+  scheduleId String
+  dayOfWeek  Int // 0=Sun .. 6=Sat (UI orders Mon-first)
+  allDay     Boolean @default(false)
+
+  schedule WeeklySchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  ranges   TimeRange[]
+
+  @@unique([scheduleId, dayOfWeek])
+}
