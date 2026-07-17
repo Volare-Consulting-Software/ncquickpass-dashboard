@@ -87,44 +87,39 @@
   <ng-template #addForm let-t>
     <div class="actions">
       <label class="end-picker">
+        <span>HOV start</span>
+        <input
+          type="text"
+          class="date-field"
+          placeholder="Optional — starts now"
+          appDateTimePicker
+          #startPicker="appDateTimePicker"
+          (valueChange)="startInputs[t] = $event ?? ''"
+          [disabled]="busyTransponder === t"
+        />
+      </label>
+      <label class="end-picker">
         <span>HOV end</span>
         <input
           type="text"
           class="date-field"
           placeholder="Select date &amp; time"
           appDateTimePicker
+          #endPicker="appDateTimePicker"
           (valueChange)="endInputs[t] = $event ?? ''"
           [disabled]="busyTransponder === t"
         />
       </label>
-      @if (futureStart[t]) {
-        <label class="end-picker">
-          <span>HOV start</span>
-          <input
-            type="text"
-            class="date-field"
-            placeholder="Select date &amp; time"
-            appDateTimePicker
-            (valueChange)="startInputs[t] = $event ?? ''"
-            [disabled]="busyTransponder === t"
-          />
-        </label>
-      }
-      <label class="future-toggle">
-        <input
-          type="checkbox"
-          [ngModel]="futureStart[t] || false"
-          (ngModelChange)="futureStart[t] = $event"
-          [disabled]="busyTransponder === t"
-        />
-        <span>Start in the future</span>
-      </label>
+      <button class="btn-primary" (click)="onSetEnd(t)" [disabled]="busyTransponder === t">
+        Confirm
+      </button>
       <button
-        class="btn-primary"
-        (click)="onSetEnd(t)"
+        type="button"
+        class="btn-ghost"
+        (click)="startPicker.clear(); endPicker.clear(); startInputs[t] = ''; endInputs[t] = ''"
         [disabled]="busyTransponder === t"
       >
-        {{ futureStart[t] ? 'Schedule HOV' : 'Confirm' }}
+        Clear
       </button>
     </div>
   </ng-template>

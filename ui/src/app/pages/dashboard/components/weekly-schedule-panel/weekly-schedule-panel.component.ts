@@ -11,6 +11,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { HovService, PutSchedule } from '../../../../core/services/hov.service';
+import { serverMessage } from '../../../../core/http-utils';
 import { VehicleView } from '../../../../core/models/VehicleView';
 import { WeeklySchedule } from '../../../../core/models/WeeklySchedule';
 import { SelectComponent, SelectOption } from '../../../../shared/select/select.component';
@@ -79,10 +80,16 @@ export class WeeklySchedulePanelComponent implements OnChanges {
   }
 
   get vehicleOptions(): SelectOption[] {
-    return this.vehicles.map((v) => ({
-      label: v.friendlyName ? `${v.friendlyName} · #${v.transponderNumber}` : `#${v.transponderNumber}`,
-      value: v.transponderNumber,
-    }));
+    const isActive = (v: VehicleView) => (v.status || '').toUpperCase() === 'ACTIVE';
+    // Active transponders first, retained second (stable within each group).
+    return [...this.vehicles]
+      .sort((a, b) => Number(isActive(b)) - Number(isActive(a)))
+      .map((v) => ({
+        label: v.friendlyName
+          ? `${v.friendlyName} · #${v.transponderNumber}`
+          : `#${v.transponderNumber}`,
+        value: v.transponderNumber,
+      }));
   }
 
   onVehicleChange(value: number | string): void {
@@ -152,13 +159,13 @@ export class WeeklySchedulePanelComponent implements OnChanges {
       },
       error: (err: HttpErrorResponse) => {
         this.saving.set(false);
-        const serverMessage = typeof err?.error?.message === 'string' ? err.error.message : null;
+        const message = serverMessage(err);
         // Bad password (or other arming failure) surfaces inside the still-open prompt;
         // anything else is a general save error on the form.
         if (this.passwordPromptOpen()) {
-          this.pwError.set(serverMessage ?? 'Could not enable automatic scheduling. Please try again.');
+          this.pwError.set(message ?? 'Could not enable automatic scheduling. Please try again.');
         } else {
-          this.error.set(serverMessage ?? 'Could not save the schedule. Please try again.');
+          this.error.set(message ?? 'Could not save the schedule. Please try again.');
         }
       },
     });

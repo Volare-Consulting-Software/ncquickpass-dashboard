@@ -125,7 +125,8 @@
   border-top: 1px dashed var(--border);
 
   .btn-primary,
-  .btn-danger {
+  .btn-danger,
+  .btn-ghost {
     padding: 0.4rem 0.7rem;
     font-size: 0.82rem;
   }
@@ -149,21 +150,6 @@
   &:hover:not(:disabled) {
     border-color: var(--accent);
     background: var(--accent-dim);
-  }
-}
-
-.future-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.78rem;
-  color: var(--muted);
-  cursor: pointer;
-  align-self: flex-end;
-  padding-bottom: 0.35rem;
-
-  input {
-    accent-color: var(--accent);
   }
 }
 

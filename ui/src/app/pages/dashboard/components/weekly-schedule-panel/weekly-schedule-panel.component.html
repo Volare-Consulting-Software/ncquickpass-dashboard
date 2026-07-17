@@ -10,11 +10,6 @@
     />
   </div>
 
-  <p class="hint">
-    Choose the days and times HOV should be active. This schedule is saved per vehicle, repeats
-    every week, and runs automatically.
-  </p>
-
   @if (loading()) {
     <p class="empty">Loading…</p>
   } @else {
@@ -82,12 +77,12 @@
     </button>
     @if (confirmingClear()) {
       <div class="confirm-clear" role="alertdialog">
-        <span class="confirm-text">Clear this vehicle's weekly schedule?</span>
+        <span class="confirm-text">Are you sure?</span>
         <button type="button" class="btn-danger" (click)="confirmClear()" [disabled]="saving()">
-          Yes, clear
+          Clear
         </button>
         <button type="button" class="btn-ghost" (click)="cancelClear()" [disabled]="saving()">
-          Keep
+          Cancel
         </button>
       </div>
     } @else {

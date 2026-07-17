@@ -1,8 +1,8 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, signal } from '@angular/core';
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { DeclarationView } from '../../../../core/models/DeclarationView';
 import { VehicleView } from '../../../../core/models/VehicleView';
+import { isSameDay } from '../../../../core/date-utils';
 import { DateTimePickerDirective } from '../../../../core/date-time-picker.directive';
 
 export interface ActivateRequest {
@@ -17,7 +17,7 @@ const ACTIVE_STATUSES = ['active', 'submitted'];
 @Component({
   selector: 'app-hov-status',
   standalone: true,
-  imports: [DatePipe, NgTemplateOutlet, FormsModule, DateTimePickerDirective],
+  imports: [DatePipe, NgTemplateOutlet, DateTimePickerDirective],
   templateUrl: './hov-status.component.html',
   styleUrl: './hov-status.component.scss',
 })
@@ -47,11 +47,9 @@ export class HovStatusComponent implements OnInit, OnDestroy {
   /** Chosen custom end date/time per transponder (ISO string from the picker). */
   endInputs: Record<string, string> = {};
 
-  /** Chosen future start date/time per transponder (ISO string from the picker). */
+  /** Optional future start date/time per transponder (ISO string from the picker).
+   *  Blank/past → activate now; a future value → a scheduled declaration. */
   startInputs: Record<string, string> = {};
-
-  /** Whether the user opted to schedule a future start for this transponder. */
-  futureStart: Record<string, boolean> = {};
 
   /** Whether the add-declaration form is revealed for a transponder that already
    *  has active/pending declarations (via "Add another HOV declaration"). */
@@ -100,9 +98,7 @@ export class HovStatusComponent implements OnInit, OnDestroy {
   /** True for a declaration already active, or pending with a start later today. */
   private startsTodayOrActive(decl: DeclarationView): boolean {
     if (!this.isPending(decl) || !decl.startDateTime) return true;
-    const start = new Date(decl.startDateTime);
-    const today = new Date(this.now());
-    return start.toDateString() === today.toDateString();
+    return isSameDay(decl.startDateTime, new Date(this.now()));
   }
 
   /** Card-head summary of the current HOV state across all vehicles. */
@@ -135,11 +131,11 @@ export class HovStatusComponent implements OnInit, OnDestroy {
   }
 
   onSetEnd(transponderNumber: string): void {
-    // The picker directive already emits an ISO-8601 string.
+    // The picker directive already emits an ISO-8601 string. A start is optional:
+    // the dashboard treats a future start as a scheduled declaration and a
+    // blank/past start as "activate now".
     const endDateTime = this.endInputs[transponderNumber] || undefined;
-    const startDateTime = this.futureStart[transponderNumber]
-      ? this.startInputs[transponderNumber] || undefined
-      : undefined;
+    const startDateTime = this.startInputs[transponderNumber] || undefined;
     this.activate.emit({ transponderNumber, endDateTime, startDateTime });
     // Collapse the extra "add another" form back to the button after submitting.
     this.showAdd[transponderNumber] = false;

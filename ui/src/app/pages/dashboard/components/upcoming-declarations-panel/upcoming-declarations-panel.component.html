@@ -7,14 +7,19 @@
         <div class="future-info">
           <div class="future-when">
             {{ d.windowStart | date: 'EEE, MMM d · h:mm a' }} –
-            {{ d.windowEnd | date: 'h:mm a' }}
+            @if (sameDay(d.windowStart, d.windowEnd)) {
+              {{ d.windowEnd | date: 'h:mm a' }}
+            } @else {
+              {{ d.windowEnd | date: 'EEE, MMM d · h:mm a' }}
+            }
           </div>
-          <div class="future-veh">{{ vehicleName(d.transponderNumber) }}</div>
+          <div class="future-veh">
+            {{ vehicleName(d.transponderNumber) }} · #{{ d.transponderNumber }}
+          </div>
           <div class="future-meta">
             <span class="source-chip" [class.adhoc]="d.source === 'adhoc'">
               {{ d.source === 'adhoc' ? 'Ad-hoc' : 'Weekly' }}
             </span>
-            <span class="tag">#{{ d.transponderNumber }}</span>
           </div>
         </div>
         <button

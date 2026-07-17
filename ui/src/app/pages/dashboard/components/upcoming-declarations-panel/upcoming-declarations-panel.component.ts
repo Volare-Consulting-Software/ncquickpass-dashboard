@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FutureDeclaration } from '../../../../core/models/FutureDeclaration';
 import { VehicleView } from '../../../../core/models/VehicleView';
+import { isSameDay } from '../../../../core/date-utils';
 
 /**
  * Presentational list of upcoming scheduled declarations with a per-item cancel.
@@ -26,4 +27,7 @@ export class UpcomingDeclarationsPanelComponent {
     const match = this.vehicles.find((v) => v.transponderNumber === transponderNumber);
     return match?.friendlyName || 'Transponder';
   }
+
+  /** Template helper: true when both ISO timestamps are the same calendar day. */
+  readonly sameDay = isSameDay;
 }

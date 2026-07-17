@@ -12,6 +12,8 @@ import { DeclarationView } from '../../core/models/DeclarationView';
 import { TransactionView } from '../../core/models/TransactionView';
 import { VehicleView } from '../../core/models/VehicleView';
 import { groupIntoTrips, replenishments } from '../../core/trip-grouping';
+import { endOfDay } from '../../core/date-utils';
+import { serverMessage } from '../../core/http-utils';
 import { FutureDeclaration } from '../../core/models/FutureDeclaration';
 import { ActivateRequest, HovStatusComponent } from './components/hov-status/hov-status.component';
 import { TripListComponent } from './components/trip-list/trip-list.component';
@@ -148,7 +150,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.actionMessage.set(null);
     // Check whether this window overlaps a scheduled declaration first.
     const start = req.startDateTime ? new Date(req.startDateTime) : new Date();
-    const end = req.endDateTime ? new Date(req.endDateTime) : endOfDayOf(start);
+    const end = req.endDateTime ? new Date(req.endDateTime) : endOfDay(start);
     this.hov
       .checkConflict({
         transponderNumber: req.transponderNumber,
@@ -185,9 +187,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.busyTransponder.set(null);
   }
 
-  /** Immediate activation goes straight through; a future start needs the password. */
+  /** A genuinely future start becomes a scheduled declaration (needs the password);
+   *  a blank or past start activates now. */
   private proceedActivate(req: ActivateRequest): void {
-    if (req.startDateTime) {
+    const startsInFuture =
+      !!req.startDateTime && new Date(req.startDateTime).getTime() > Date.now() + 60_000;
+    if (startsInFuture) {
       this.busyTransponder.set(null);
       this.adhocPwError.set(null);
       this.adhocPending.set(req);
@@ -202,7 +207,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.adhocBusy.set(true);
     this.adhocPwError.set(null);
     const start = new Date(pending.startDateTime);
-    const end = pending.endDateTime ? new Date(pending.endDateTime) : endOfDayOf(start);
+    const end = pending.endDateTime ? new Date(pending.endDateTime) : endOfDay(start);
     this.hov
       .scheduleAdhoc(pending.transponderNumber, start.toISOString(), end.toISOString(), password)
       .subscribe({
@@ -213,9 +218,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
         },
         error: (err: HttpErrorResponse) => {
           this.adhocBusy.set(false);
-          const serverMessage = typeof err?.error?.message === 'string' ? err.error.message : null;
           this.adhocPwError.set(
-            serverMessage ?? 'Could not schedule that declaration. Please try again.',
+            serverMessage(err) ?? 'Could not schedule that declaration. Please try again.',
           );
         },
       });
@@ -326,9 +330,3 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 }
 
-/** Local end-of-day for the given date — the implicit end when none is chosen. */
-function endOfDayOf(d: Date): Date {
-  const e = new Date(d);
-  e.setHours(23, 59, 59, 999);
-  return e;
-}
