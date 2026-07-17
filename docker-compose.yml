@@ -13,9 +13,9 @@ services:
     build: ./api
     environment:
       PORT: 3000
-      # The public origin the browser uses (for CORS; requests are same-origin
-      # via nginx in this setup, so this is a belt-and-suspenders default).
-      CORS_ORIGIN: http://localhost:8080
+      # Requests are same-origin via nginx, so CORS is not needed here. Leave
+      # empty; only set CORS_ORIGIN (to an exact origin) for a cross-origin browser.
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
       COOKIE_SECRET: ${COOKIE_SECRET:-dev-only-insecure-secret-change-me}
       # Set true when serving over HTTPS so the session cookie is marked Secure.
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
