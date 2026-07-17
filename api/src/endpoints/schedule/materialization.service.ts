@@ -17,6 +17,19 @@ export interface FutureDeclarationView {
   windowStart: string;
   windowEnd: string;
   status: string;
+  /** How this declaration was derived: 'weekly' schedule or 'adhoc'. */
+  source: string;
+  ncqpDeclarationId: string | null;
+}
+
+/** Shape of an HOVDeclaration row as returned by Prisma (only fields we map). */
+interface DeclarationRow {
+  id: string;
+  transponderNumber: string;
+  windowStart: Date;
+  windowEnd: Date;
+  status: string;
+  source: string;
   ncqpDeclarationId: string | null;
 }
 
@@ -74,10 +87,12 @@ export class MaterializationService {
       { days, timezone: schedule.timezone, horizonDays: schedule.horizonDays },
       new Date(),
     );
+    // Only this schedule's own (weekly) rows — never diff or cancel ad-hoc ones.
     const existing = await this.prisma.hOVDeclaration.findMany({
       where: {
         accountId: ctx.accountId,
         transponderNumber: schedule.transponderNumber,
+        scheduleId: schedule.id,
         status: 'materialized',
         windowEnd: { gte: new Date() },
       },
@@ -112,13 +127,19 @@ export class MaterializationService {
           create: {
             accountId: ctx.accountId,
             scheduleId: schedule.id,
+            source: 'weekly',
             transponderNumber: schedule.transponderNumber,
             windowStart: window.start,
             windowEnd: window.end,
             ncqpDeclarationId: String(declarationId),
             status: 'materialized',
           },
-          update: { ncqpDeclarationId: String(declarationId), status: 'materialized' },
+          update: {
+            scheduleId: schedule.id,
+            source: 'weekly',
+            ncqpDeclarationId: String(declarationId),
+            status: 'materialized',
+          },
         });
         created++;
       } catch (err) {
@@ -144,14 +165,56 @@ export class MaterializationService {
       where: { accountId, status: 'materialized', windowEnd: { gte: new Date() } },
       orderBy: { windowStart: 'asc' },
     });
-    return rows.map((r) => ({
-      id: r.id,
-      transponderNumber: r.transponderNumber,
-      windowStart: r.windowStart.toISOString(),
-      windowEnd: r.windowEnd.toISOString(),
-      status: r.status,
-      ncqpDeclarationId: r.ncqpDeclarationId,
-    }));
+    return rows.map(MaterializationService.toView);
+  }
+
+  /**
+   * Create a one-off ad-hoc future-dated declaration and persist it (source
+   * 'adhoc', no schedule) so it shows in Upcoming and survives independently of
+   * any weekly schedule. Uses the caller's token (freshly minted when arming the
+   * vault) to create the NCQP declaration immediately.
+   */
+  async createAdhoc(
+    ctx: MaterializeContext,
+    transponderNumber: string,
+    start: Date,
+    end: Date,
+  ): Promise<FutureDeclarationView> {
+    const declarationId = await this.ncqp.activateHov(ctx.token, {
+      accountId: ctx.accountId,
+      transponderNumber,
+      location: HOV_LOCATION,
+      startDateTime: start.toISOString(),
+      endDateTime: end.toISOString(),
+      createdByUserId: ctx.userId,
+      option: 'DateInTheFuture',
+    });
+    const row = await this.prisma.hOVDeclaration.upsert({
+      where: {
+        accountId_transponderNumber_windowStart_windowEnd: {
+          accountId: ctx.accountId,
+          transponderNumber,
+          windowStart: start,
+          windowEnd: end,
+        },
+      },
+      create: {
+        accountId: ctx.accountId,
+        scheduleId: null,
+        source: 'adhoc',
+        transponderNumber,
+        windowStart: start,
+        windowEnd: end,
+        ncqpDeclarationId: String(declarationId),
+        status: 'materialized',
+      },
+      update: {
+        source: 'adhoc',
+        ncqpDeclarationId: String(declarationId),
+        status: 'materialized',
+      },
+    });
+    return MaterializationService.toView(row);
   }
 
   /** Future materialized declarations for a transponder that overlap an ad-hoc window. */
@@ -171,14 +234,19 @@ export class MaterializationService {
     });
     return rows
       .filter((r) => overlaps({ start, end }, { start: r.windowStart, end: r.windowEnd }))
-      .map((r) => ({
-        id: r.id,
-        transponderNumber: r.transponderNumber,
-        windowStart: r.windowStart.toISOString(),
-        windowEnd: r.windowEnd.toISOString(),
-        status: r.status,
-        ncqpDeclarationId: r.ncqpDeclarationId,
-      }));
+      .map(MaterializationService.toView);
+  }
+
+  private static toView(r: DeclarationRow): FutureDeclarationView {
+    return {
+      id: r.id,
+      transponderNumber: r.transponderNumber,
+      windowStart: r.windowStart.toISOString(),
+      windowEnd: r.windowEnd.toISOString(),
+      status: r.status,
+      source: r.source,
+      ncqpDeclarationId: r.ncqpDeclarationId,
+    };
   }
 
   /** Cancel several materialized declarations by id (e.g. resolving a conflict). */
@@ -207,12 +275,16 @@ export class MaterializationService {
     return { canceled: ok };
   }
 
-  /** Cancel all materialized future declarations for a transponder (schedule removed). */
+  /**
+   * Cancel a transponder's future WEEKLY declarations (its schedule was removed).
+   * Ad-hoc declarations are independent and left untouched.
+   */
   async cancelForTransponder(ctx: MaterializeContext, transponderNumber: string): Promise<number> {
     const rows = await this.prisma.hOVDeclaration.findMany({
       where: {
         accountId: ctx.accountId,
         transponderNumber,
+        source: 'weekly',
         status: 'materialized',
         windowEnd: { gte: new Date() },
       },

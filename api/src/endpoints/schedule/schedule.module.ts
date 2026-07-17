@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { NcqpModule } from '../ncqp/ncqp.module';
+import { AuthModule } from '../auth/auth.module';
 import { ScheduleController } from './schedule.controller';
 import { ScheduleService } from './schedule.service';
 import { MaterializationService } from './materialization.service';
@@ -12,7 +13,7 @@ import { ScheduleCron } from './schedule.cron';
  * comes from the global PrismaModule; NcqpService from NcqpModule.
  */
 @Module({
-  imports: [NcqpModule],
+  imports: [NcqpModule, AuthModule],
   controllers: [ScheduleController],
   providers: [ScheduleService, MaterializationService, CredentialVaultService, ScheduleCron],
 })

@@ -1,0 +1,46 @@
+<app-drawer [open]="open" title="Scheduled" (close)="close.emit()">
+  <div class="tabs" role="tablist">
+    <button
+      type="button"
+      class="tab"
+      role="tab"
+      [class.active]="tab() === 'weekly'"
+      [attr.aria-selected]="tab() === 'weekly'"
+      (click)="setTab('weekly')"
+    >
+      Weekly
+    </button>
+    <button
+      type="button"
+      class="tab"
+      role="tab"
+      [class.active]="tab() === 'upcoming'"
+      [attr.aria-selected]="tab() === 'upcoming'"
+      (click)="setTab('upcoming')"
+    >
+      Upcoming
+      @if (upcoming.length > 0) {
+        <span class="count-badge" [attr.aria-label]="upcoming.length + ' upcoming'">
+          {{ upcoming.length }}
+        </span>
+      }
+    </button>
+  </div>
+
+  <div class="tab-panel" [hidden]="tab() !== 'weekly'">
+    <app-weekly-schedule-panel
+      [active]="open && tab() === 'weekly'"
+      [vehicles]="vehicles"
+      (saved)="saved.emit($event)"
+    />
+  </div>
+
+  <div class="tab-panel" [hidden]="tab() !== 'upcoming'">
+    <app-upcoming-declarations-panel
+      [declarations]="upcoming"
+      [vehicles]="vehicles"
+      [busyId]="busyId"
+      (cancel)="cancelUpcoming.emit($event)"
+    />
+  </div>
+</app-drawer>

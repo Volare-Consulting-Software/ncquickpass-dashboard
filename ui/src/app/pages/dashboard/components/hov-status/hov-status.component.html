@@ -5,8 +5,12 @@
       <p class="summary">{{ summary }}</p>
     </div>
     <div class="head-actions">
-      <button class="btn-ghost schedule-btn" (click)="openFuture.emit()">Scheduled</button>
-      <button class="btn-ghost schedule-btn" (click)="openSchedule.emit()">Weekly Schedule</button>
+      <button class="btn-ghost schedule-btn" (click)="openScheduled.emit()">
+        Scheduled
+        @if (upcomingCount > 0) {
+          <span class="count-badge">{{ upcomingCount }}</span>
+        }
+      </button>
     </div>
   </header>
 
@@ -49,35 +53,81 @@
                 </div>
               }
             </div>
+            @if (showAdd[v.transponderNumber]) {
+              <ng-container
+                [ngTemplateOutlet]="addForm"
+                [ngTemplateOutletContext]="{ $implicit: v.transponderNumber }"
+              />
+            } @else {
+              <div class="actions">
+                <button
+                  type="button"
+                  class="add-another"
+                  (click)="showAdd[v.transponderNumber] = true"
+                  [disabled]="busyTransponder === v.transponderNumber"
+                >
+                  + Add another HOV declaration
+                </button>
+              </div>
+            }
           } @else {
             <div class="status">
               <span class="badge badge-idle">No active HOV</span>
             </div>
-            <div class="actions">
-              <label class="end-picker">
-                <span>HOV end</span>
-                <input
-                  type="text"
-                  class="date-field"
-                  placeholder="Select date &amp; time"
-                  appDateTimePicker
-                  (valueChange)="endInputs[v.transponderNumber] = $event ?? ''"
-                  [disabled]="busyTransponder === v.transponderNumber"
-                />
-              </label>
-              <button
-                class="btn-primary"
-                (click)="onSetEnd(v.transponderNumber)"
-                [disabled]="busyTransponder === v.transponderNumber"
-              >
-                Set HOV end
-              </button>
-            </div>
+            <ng-container
+              [ngTemplateOutlet]="addForm"
+              [ngTemplateOutletContext]="{ $implicit: v.transponderNumber }"
+            />
           }
         }
       </li>
     }
   </ul>
+
+  <ng-template #addForm let-t>
+    <div class="actions">
+      <label class="end-picker">
+        <span>HOV end</span>
+        <input
+          type="text"
+          class="date-field"
+          placeholder="Select date &amp; time"
+          appDateTimePicker
+          (valueChange)="endInputs[t] = $event ?? ''"
+          [disabled]="busyTransponder === t"
+        />
+      </label>
+      @if (futureStart[t]) {
+        <label class="end-picker">
+          <span>HOV start</span>
+          <input
+            type="text"
+            class="date-field"
+            placeholder="Select date &amp; time"
+            appDateTimePicker
+            (valueChange)="startInputs[t] = $event ?? ''"
+            [disabled]="busyTransponder === t"
+          />
+        </label>
+      }
+      <label class="future-toggle">
+        <input
+          type="checkbox"
+          [ngModel]="futureStart[t] || false"
+          (ngModelChange)="futureStart[t] = $event"
+          [disabled]="busyTransponder === t"
+        />
+        <span>Start in the future</span>
+      </label>
+      <button
+        class="btn-primary"
+        (click)="onSetEnd(t)"
+        [disabled]="busyTransponder === t"
+      >
+        {{ futureStart[t] ? 'Schedule HOV' : 'Confirm' }}
+      </button>
+    </div>
+  </ng-template>
 
   @if (retainedVehicles.length > 0) {
     <button class="retained-toggle" (click)="toggleRetained()" [attr.aria-expanded]="showRetained">

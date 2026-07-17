@@ -1,6 +1,6 @@
 <div class="login-wrap">
   <form class="login-card" (ngSubmit)="submit()">
-    <img class="login-logo" src="assets/ncta-logo.svg" alt="NC Quick Pass" />
+    <app-ncqp-logo class="login-logo" [height]="40" />
     <p class="subtitle">Dashboard</p>
 
     @if (error(); as err) {

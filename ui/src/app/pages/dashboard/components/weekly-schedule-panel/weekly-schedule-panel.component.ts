@@ -9,11 +9,12 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { HovService, PutSchedule } from '../../../../core/services/hov.service';
 import { VehicleView } from '../../../../core/models/VehicleView';
 import { WeeklySchedule } from '../../../../core/models/WeeklySchedule';
-import { DrawerComponent } from '../../../../shared/drawer/drawer.component';
 import { SelectComponent, SelectOption } from '../../../../shared/select/select.component';
+import { PasswordPromptComponent } from '../../../../shared/password-prompt/password-prompt.component';
 import { TimePickerDirective } from '../../../../core/time-picker.directive';
 
 interface EditRange {
@@ -40,25 +41,24 @@ const WEEK: ReadonlyArray<{ dayOfWeek: number; label: string }> = [
 ];
 
 @Component({
-  selector: 'app-weekly-schedule-drawer',
+  selector: 'app-weekly-schedule-panel',
   standalone: true,
-  imports: [FormsModule, DrawerComponent, SelectComponent, TimePickerDirective],
-  templateUrl: './weekly-schedule-drawer.component.html',
-  styleUrl: './weekly-schedule-drawer.component.scss',
+  imports: [FormsModule, SelectComponent, PasswordPromptComponent, TimePickerDirective],
+  templateUrl: './weekly-schedule-panel.component.html',
+  styleUrl: './weekly-schedule-panel.component.scss',
 })
-export class WeeklyScheduleDrawerComponent implements OnChanges {
+export class WeeklySchedulePanelComponent implements OnChanges {
   private readonly hov = inject(HovService);
 
-  @Input() open = false;
+  /** True while the parent drawer is open on the Weekly tab; triggers a (re)load. */
+  @Input() active = false;
   @Input() vehicles: VehicleView[] = [];
-  @Output() close = new EventEmitter<void>();
   @Output() saved = new EventEmitter<string>();
 
   selectedTransponder = '';
-  credentialOnFile = false;
   password = '';
+  scheduleExists = false;
   private timezone = 'America/New_York';
-  private scheduleExists = false;
 
   dayEdits: DayEdit[] = WEEK.map((w) => ({ ...w, allDay: false, ranges: [] }));
 
@@ -66,9 +66,11 @@ export class WeeklyScheduleDrawerComponent implements OnChanges {
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
   readonly passwordPromptOpen = signal(false);
+  readonly pwError = signal<string | null>(null);
+  readonly confirmingClear = signal(false);
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['open'] && this.open) {
+    if (changes['active'] && this.active) {
       if (!this.selectedTransponder && this.vehicles.length > 0) {
         this.selectedTransponder = this.vehicles[0].transponderNumber;
       }
@@ -104,28 +106,29 @@ export class WeeklyScheduleDrawerComponent implements OnChanges {
     this.error.set(null);
     const days = this.buildDays();
     if (days === null) return; // validation error already set
-    // A schedule with active days runs automatically, which needs the password to
-    // arm the credential vault the first time. Prompt for it before saving.
-    if (days.length > 0 && !this.credentialOnFile && !this.password) {
+    // An active schedule runs in the background, so we re-capture the password on
+    // every save (it may have changed). Removing all days just disables it.
+    if (days.length > 0) {
+      this.pwError.set(null);
       this.passwordPromptOpen.set(true);
       return;
     }
     this.doSave(days);
   }
 
-  confirmPassword(): void {
-    if (!this.password) {
-      this.error.set('Enter your NC Quick Pass password to enable automatic scheduling.');
-      return;
-    }
+  onPasswordConfirm(password: string): void {
+    this.password = password;
     const days = this.buildDays();
     if (days === null) return;
-    this.passwordPromptOpen.set(false);
+    // Keep the prompt open until the server confirms the password mints a token;
+    // a wrong password comes back as an error shown inside the prompt.
+    this.pwError.set(null);
     this.doSave(days);
   }
 
   cancelPassword(): void {
     this.passwordPromptOpen.set(false);
+    this.pwError.set(null);
     this.password = '';
   }
 
@@ -142,32 +145,50 @@ export class WeeklyScheduleDrawerComponent implements OnChanges {
       next: (schedule) => {
         this.saving.set(false);
         this.password = '';
+        this.passwordPromptOpen.set(false);
+        this.pwError.set(null);
         this.apply(schedule);
         this.saved.emit('Weekly schedule saved.');
-        this.close.emit();
       },
-      error: () => {
+      error: (err: HttpErrorResponse) => {
         this.saving.set(false);
-        this.error.set('Could not save the schedule. Please try again.');
+        const serverMessage = typeof err?.error?.message === 'string' ? err.error.message : null;
+        // Bad password (or other arming failure) surfaces inside the still-open prompt;
+        // anything else is a general save error on the form.
+        if (this.passwordPromptOpen()) {
+          this.pwError.set(serverMessage ?? 'Could not enable automatic scheduling. Please try again.');
+        } else {
+          this.error.set(serverMessage ?? 'Could not save the schedule. Please try again.');
+        }
       },
     });
   }
 
-  remove(): void {
+  /** First step of clearing: reveal the inline confirmation (no modal). */
+  startClear(): void {
     if (!this.scheduleExists) {
-      this.close.emit();
+      this.saved.emit('');
       return;
     }
+    this.confirmingClear.set(true);
+  }
+
+  cancelClear(): void {
+    this.confirmingClear.set(false);
+  }
+
+  /** Confirmed clear: delete the weekly schedule for this vehicle. */
+  confirmClear(): void {
+    this.confirmingClear.set(false);
     this.saving.set(true);
     this.hov.deleteSchedule(this.selectedTransponder).subscribe({
       next: () => {
         this.saving.set(false);
-        this.saved.emit('Weekly schedule removed.');
-        this.close.emit();
+        this.saved.emit('Weekly schedule cleared.');
       },
       error: () => {
         this.saving.set(false);
-        this.error.set('Could not remove the schedule. Please try again.');
+        this.error.set('Could not clear the schedule. Please try again.');
       },
     });
   }
@@ -175,6 +196,7 @@ export class WeeklyScheduleDrawerComponent implements OnChanges {
   private load(transponder: string): void {
     this.loading.set(true);
     this.error.set(null);
+    this.confirmingClear.set(false);
     this.hov.getSchedule(transponder).subscribe({
       next: (schedule) => {
         this.apply(schedule);
@@ -189,7 +211,6 @@ export class WeeklyScheduleDrawerComponent implements OnChanges {
 
   private apply(schedule: WeeklySchedule): void {
     this.timezone = schedule.timezone;
-    this.credentialOnFile = schedule.credentialOnFile;
     this.scheduleExists = schedule.days.length > 0;
     this.dayEdits = WEEK.map((w) => {
       const found = schedule.days.find((d) => d.dayOfWeek === w.dayOfWeek);

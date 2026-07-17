@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { DeclarationView } from '../../../../core/models/DeclarationView';
 import { VehicleView } from '../../../../core/models/VehicleView';
 import { DateTimePickerDirective } from '../../../../core/date-time-picker.directive';
@@ -7,6 +8,8 @@ import { DateTimePickerDirective } from '../../../../core/date-time-picker.direc
 export interface ActivateRequest {
   transponderNumber: string;
   endDateTime?: string;
+  /** ISO start; when present the declaration is scheduled to begin in the future. */
+  startDateTime?: string;
 }
 
 const ACTIVE_STATUSES = ['active', 'submitted'];
@@ -14,7 +17,7 @@ const ACTIVE_STATUSES = ['active', 'submitted'];
 @Component({
   selector: 'app-hov-status',
   standalone: true,
-  imports: [DatePipe, DateTimePickerDirective],
+  imports: [DatePipe, NgTemplateOutlet, FormsModule, DateTimePickerDirective],
   templateUrl: './hov-status.component.html',
   styleUrl: './hov-status.component.scss',
 })
@@ -22,11 +25,12 @@ export class HovStatusComponent implements OnInit, OnDestroy {
   @Input() vehicles: VehicleView[] = [];
   @Input() declarations: DeclarationView[] = [];
   @Input() busyTransponder: string | null = null;
+  /** Count of upcoming scheduled declarations, shown as a badge on the button. */
+  @Input() upcomingCount = 0;
 
   @Output() activate = new EventEmitter<ActivateRequest>();
   @Output() cancel = new EventEmitter<string>();
-  @Output() openSchedule = new EventEmitter<void>();
-  @Output() openFuture = new EventEmitter<void>();
+  @Output() openScheduled = new EventEmitter<void>();
 
   /** Ticks every second to drive the "Pending" countdown. */
   private readonly now = signal(Date.now());
@@ -42,6 +46,16 @@ export class HovStatusComponent implements OnInit, OnDestroy {
 
   /** Chosen custom end date/time per transponder (ISO string from the picker). */
   endInputs: Record<string, string> = {};
+
+  /** Chosen future start date/time per transponder (ISO string from the picker). */
+  startInputs: Record<string, string> = {};
+
+  /** Whether the user opted to schedule a future start for this transponder. */
+  futureStart: Record<string, boolean> = {};
+
+  /** Whether the add-declaration form is revealed for a transponder that already
+   *  has active/pending declarations (via "Add another HOV declaration"). */
+  showAdd: Record<string, boolean> = {};
 
   /** Whether the collapsed "retained" (non-active) transponders are shown. */
   showRetained = false;
@@ -62,24 +76,38 @@ export class HovStatusComponent implements OnInit, OnDestroy {
     return (v.status || '').toUpperCase() === 'ACTIVE';
   }
 
-  /** All active/submitted declarations for a transponder (a vehicle may have several). */
+  /** Active/submitted declarations for a transponder that are relevant *today*. */
   declarationsFor(transponderNumber: string): DeclarationView[] {
-    return this.declarations.filter(
-      (d) =>
-        d.transponderNumber === transponderNumber &&
-        ACTIVE_STATUSES.includes((d.status || '').toLowerCase()),
-    );
+    return this.todaysDeclarations().filter((d) => d.transponderNumber === transponderNumber);
   }
 
   isActive(transponderNumber: string): boolean {
     return this.declarationsFor(transponderNumber).length > 0;
   }
 
+  /**
+   * Active declarations plus pending ones that start today. Future-day pending
+   * declarations are intentionally excluded here — they live in the Upcoming
+   * drawer — so the status card only reflects today's HOV state.
+   */
+  private todaysDeclarations(): DeclarationView[] {
+    return this.declarations.filter(
+      (d) =>
+        ACTIVE_STATUSES.includes((d.status || '').toLowerCase()) && this.startsTodayOrActive(d),
+    );
+  }
+
+  /** True for a declaration already active, or pending with a start later today. */
+  private startsTodayOrActive(decl: DeclarationView): boolean {
+    if (!this.isPending(decl) || !decl.startDateTime) return true;
+    const start = new Date(decl.startDateTime);
+    const today = new Date(this.now());
+    return start.toDateString() === today.toDateString();
+  }
+
   /** Card-head summary of the current HOV state across all vehicles. */
   get summary(): string {
-    const active = this.declarations.filter((d) =>
-      ACTIVE_STATUSES.includes((d.status || '').toLowerCase()),
-    );
+    const active = this.todaysDeclarations();
     if (active.length === 0) return 'No active HOV declarations';
     const pending = active.filter((d) => this.isPending(d)).length;
     const live = active.length - pending;
@@ -109,7 +137,12 @@ export class HovStatusComponent implements OnInit, OnDestroy {
   onSetEnd(transponderNumber: string): void {
     // The picker directive already emits an ISO-8601 string.
     const endDateTime = this.endInputs[transponderNumber] || undefined;
-    this.activate.emit({ transponderNumber, endDateTime });
+    const startDateTime = this.futureStart[transponderNumber]
+      ? this.startInputs[transponderNumber] || undefined
+      : undefined;
+    this.activate.emit({ transponderNumber, endDateTime, startDateTime });
+    // Collapse the extra "add another" form back to the button after submitting.
+    this.showAdd[transponderNumber] = false;
   }
 
   onCancel(declarationId: string): void {

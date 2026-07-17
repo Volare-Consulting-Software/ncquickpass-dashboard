@@ -1,6 +1,6 @@
 <header class="topbar">
   <div class="brand">
-    <img class="brand-logo" src="assets/ncta-logo.svg" alt="NC Quick Pass" />
+    <app-ncqp-logo [height]="30" />
     <div class="brand-text">
       <div class="title">Dashboard</div>
       @if (accountId(); as acct) {
@@ -48,10 +48,10 @@
           [vehicles]="vehicles()"
           [declarations]="declarations()"
           [busyTransponder]="busyTransponder()"
+          [upcomingCount]="futureCount()"
           (activate)="onActivate($event)"
           (cancel)="onCancel($event)"
-          (openSchedule)="openSchedule()"
-          (openFuture)="openFuture()"
+          (openScheduled)="openScheduled()"
         />
 
         <app-account-summary
@@ -71,15 +71,26 @@
   }
 </main>
 
-<app-weekly-schedule-drawer
-  [open]="scheduleDrawerOpen()"
+<app-scheduled-drawer
+  [open]="scheduledDrawerOpen()"
   [vehicles]="vehicles()"
-  (close)="closeSchedule()"
+  [upcoming]="futureDeclarations()"
+  [busyId]="futureBusyId()"
+  (close)="closeScheduled()"
   (saved)="onScheduleSaved($event)"
+  (cancelUpcoming)="onCancelUpcoming($event)"
 />
 
-<app-future-declarations-drawer
-  [open]="futureDrawerOpen()"
-  (close)="closeFuture()"
-  (canceled)="onScheduleSaved($event)"
-/>
+<app-password-prompt
+  [open]="!!adhocPending()"
+  [busy]="adhocBusy()"
+  [error]="adhocPwError()"
+  title="Schedule this HOV"
+  confirmLabel="Schedule"
+  (confirm)="confirmAdhocPassword($event)"
+  (cancel)="cancelAdhoc()"
+>
+  This HOV declaration starts in the future, so it runs in the background. Enter your NC Quick Pass
+  password to authorize it — it's stored encrypted and used only by the scheduler,
+  <a href="/how-it-works" target="_blank" rel="noopener">how this works</a>.
+</app-password-prompt>

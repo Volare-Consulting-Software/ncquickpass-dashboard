@@ -40,6 +40,16 @@ export class TripListComponent {
       : this.trips.filter((t) => t.highway === this.selectedHighway);
   }
 
+  /** Total spend across the currently visible trips (respects range + highway filter). */
+  get visibleTotal(): number {
+    return this.visibleTrips.reduce((sum, t) => sum + t.total, 0);
+  }
+
+  /** A $0 toll/trip (e.g. an HOV-declared I-77 trip) is shown as "No Cost". */
+  isNoCost(amount: number | null | undefined): boolean {
+    return !amount;
+  }
+
   setFilter(highway: string): void {
     this.selectedHighway = highway;
     this.expanded.clear();

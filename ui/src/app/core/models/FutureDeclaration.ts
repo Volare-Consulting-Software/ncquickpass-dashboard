@@ -5,5 +5,7 @@ export interface FutureDeclaration {
   windowStart: string; // ISO
   windowEnd: string; // ISO
   status: string;
+  /** How it was derived: 'weekly' schedule or 'adhoc'. */
+  source: string;
   ncqpDeclarationId: string | null;
 }

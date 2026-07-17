@@ -138,6 +138,35 @@
   color: var(--muted);
 }
 
+.add-another {
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.4rem 0.7rem;
+
+  &:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+}
+
+.future-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  cursor: pointer;
+  align-self: flex-end;
+  padding-bottom: 0.35rem;
+
+  input {
+    accent-color: var(--accent);
+  }
+}
+
 .retained-toggle {
   margin-top: 0.85rem;
   width: 100%;
