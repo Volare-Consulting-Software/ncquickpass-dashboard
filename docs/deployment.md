@@ -30,10 +30,12 @@ hand.** After that, `main` push → image → draft release → publish release 
 - The Neon project (already created). Grab the **pooled** connection string (has
   `-pooler` in the host) from the Neon console → Connect. On Prisma 7 this single
   pooled URL serves both `migrate deploy` and the app runtime, so it's the one
-  value stored as the `production` GH Environment `DATABASE_URL` (CI applies it to
-  the Lambda — see §9). If migrations ever hit the PgBouncer "prepared statement
-  s0 already exists" error, use the **direct** (non-`-pooler`) URL instead.
-- `go-volare.com` hosted zone in Route 53 (same as `fishon.go-volare.com`).
+  value stored as the repo secret `DATABASE_URL` (CI applies it to the Lambda —
+  see §9). Strip `channel_binding=require` (the `pg` driver doesn't do SCRAM
+  channel binding); keep `sslmode=require`. If migrations ever hit the PgBouncer
+  "prepared statement s0 already exists" error, use the **direct** (non-`-pooler`)
+  URL instead.
+- `go-volare.com` DNS is on **Cloudflare** (not Route 53).
 
 Set shell vars used below:
 
@@ -201,10 +203,13 @@ aws scheduler create-schedule \
 ## 9. GitHub configuration (once)
 
 - **Secret `OIDC_AWS_ROLE_ARN`** (org or repo) — from step 4.
-- **Environment `production`** → secret **`DATABASE_URL`** = Neon **pooled** string.
-  Used by both `db-deploy` (migrations) and `sync-env` (which writes it onto the
-  Lambda). This is the single place you edit the DB credential; CI keeps the
-  function in sync, so a rotation is: update this secret → publish a release.
+- **Repo secret `DATABASE_URL`** = Neon **pooled** string (`…-pooler…?sslmode=require`,
+  no `channel_binding`). Used by both `db-deploy` (migrations) and `sync-env` (which
+  writes it onto the Lambda). A repo/org secret, not an environment secret — the
+  reusable workflows receive it by explicit input, which resolves at repo/org scope
+  (a GitHub environment secret would not reach them). This is the single place you
+  edit the DB credential; CI keeps the function in sync, so a rotation is: update
+  this secret → publish a release.
 - Branch protection on `main` is already enforced (PR + no direct pushes).
 
 ---
