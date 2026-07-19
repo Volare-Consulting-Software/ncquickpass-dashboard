@@ -178,6 +178,10 @@ button {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-dim);
 }
+/* Leave room for the inline clear button overlaid on wrapped fields. */
+.date-field-wrap .date-field {
+  padding-right: 1.7rem;
+}
 
 /* Time-only picker field (flatpickr altInput, so global like .date-field). */
 .time-field {
