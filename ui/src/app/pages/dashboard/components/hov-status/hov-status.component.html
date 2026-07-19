@@ -88,38 +88,58 @@
     <div class="actions">
       <label class="end-picker">
         <span>HOV start</span>
-        <input
-          type="text"
-          class="date-field"
-          placeholder="Optional — starts now"
-          appDateTimePicker
-          #startPicker="appDateTimePicker"
-          (valueChange)="startInputs[t] = $event ?? ''"
-          [disabled]="busyTransponder === t"
-        />
+        <span class="date-field-wrap">
+          <input
+            type="text"
+            class="date-field"
+            placeholder="Optional — starts now"
+            appDateTimePicker
+            #startPicker="appDateTimePicker"
+            (valueChange)="startInputs[t] = $event ?? ''"
+            [disabled]="busyTransponder === t"
+          />
+          @if (startInputs[t]) {
+            <button
+              type="button"
+              class="field-clear"
+              aria-label="Clear HOV start"
+              title="Clear"
+              (click)="startPicker.clear(); startInputs[t] = ''"
+              [disabled]="busyTransponder === t"
+            >
+              ✕
+            </button>
+          }
+        </span>
       </label>
       <label class="end-picker">
         <span>HOV end</span>
-        <input
-          type="text"
-          class="date-field"
-          placeholder="Select date &amp; time"
-          appDateTimePicker
-          #endPicker="appDateTimePicker"
-          (valueChange)="endInputs[t] = $event ?? ''"
-          [disabled]="busyTransponder === t"
-        />
+        <span class="date-field-wrap">
+          <input
+            type="text"
+            class="date-field"
+            placeholder="Select date &amp; time"
+            appDateTimePicker
+            #endPicker="appDateTimePicker"
+            (valueChange)="endInputs[t] = $event ?? ''"
+            [disabled]="busyTransponder === t"
+          />
+          @if (endInputs[t]) {
+            <button
+              type="button"
+              class="field-clear"
+              aria-label="Clear HOV end"
+              title="Clear"
+              (click)="endPicker.clear(); endInputs[t] = ''"
+              [disabled]="busyTransponder === t"
+            >
+              ✕
+            </button>
+          }
+        </span>
       </label>
       <button class="btn-primary" (click)="onSetEnd(t)" [disabled]="busyTransponder === t">
         Confirm
-      </button>
-      <button
-        type="button"
-        class="btn-ghost"
-        (click)="startPicker.clear(); endPicker.clear(); startInputs[t] = ''; endInputs[t] = ''"
-        [disabled]="busyTransponder === t"
-      >
-        Clear
       </button>
     </div>
   </ng-template>
