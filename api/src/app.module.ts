@@ -4,7 +4,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { PrismaModule } from './prisma/prisma.module';
+import { DatabaseModule } from './database/database.module';
 import { NcqpModule } from './endpoints/ncqp/ncqp.module';
 import { AuthModule } from './endpoints/auth/auth.module';
 import { AccountModule } from './endpoints/account/account.module';
@@ -27,7 +27,7 @@ const serveStatic = existsSync(clientPath)
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
     ...serveStatic,
-    PrismaModule,
+    DatabaseModule,
     NcqpModule,
     AuthModule,
     AccountModule,

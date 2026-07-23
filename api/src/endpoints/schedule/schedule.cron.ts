@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { PrismaService } from '../../prisma/prisma.service';
+import { DbClient } from '../../database/db-client';
 import { NcqpService } from '../ncqp/ncqp.service';
 import { AuthService } from '../auth/auth.service';
 import { CredentialVaultService } from './credential-vault.service';
@@ -33,7 +33,7 @@ export class ScheduleCron {
   private readonly inProcessEnabled: boolean;
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly db: DbClient,
     private readonly ncqp: NcqpService,
     private readonly vault: CredentialVaultService,
     private readonly materialization: MaterializationService,
@@ -56,7 +56,7 @@ export class ScheduleCron {
   async reconcileAll(): Promise<ReconcileAllResult> {
     const totals: ReconcileAllResult = { tenants: 0, created: 0, canceled: 0 };
     if (!this.vault.enabled) return totals;
-    const tenants = await this.prisma.credential.findMany({ select: { accountId: true } });
+    const tenants = await this.db.credential.findMany({ select: { accountId: true } });
     totals.tenants = tenants.length;
     this.logger.log(`Reconciling schedules for ${tenants.length} tenant(s)`);
 

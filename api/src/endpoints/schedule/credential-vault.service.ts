@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
-import { PrismaService } from '../../prisma/prisma.service';
+import { DbClient } from '../../database/db-client';
 
 export interface NcqpCredentials {
   username: string;
@@ -47,7 +47,7 @@ export class CredentialVaultService {
 
   constructor(
     private readonly config: ConfigService,
-    private readonly prisma: PrismaService,
+    private readonly db: DbClient,
   ) {
     this.keyArn = this.config.get<string>('CREDENTIAL_KEY') || null;
     const raw = this.config.get<string>('CREDENTIAL_KEY_LOCAL') ?? '';
@@ -73,7 +73,7 @@ export class CredentialVaultService {
   }
 
   async has(accountId: string): Promise<boolean> {
-    return (await this.prisma.credential.count({ where: { accountId } })) > 0;
+    return (await this.db.credential.count({ where: { accountId } })) > 0;
   }
 
   async store(accountId: string, username: string, password: string): Promise<void> {
@@ -95,7 +95,7 @@ export class CredentialVaultService {
       throw new Error('Credential storage is not configured');
     }
 
-    await this.prisma.credential.upsert({
+    await this.db.credential.upsert({
       where: { accountId },
       create: { accountId, ...data },
       update: data,
@@ -103,7 +103,7 @@ export class CredentialVaultService {
   }
 
   async load(accountId: string): Promise<NcqpCredentials | null> {
-    const row = await this.prisma.credential.findUnique({ where: { accountId } });
+    const row = await this.db.credential.findUnique({ where: { accountId } });
     if (!row) return null;
 
     // A local-AES row carries iv + authTag; a KMS row stores everything in the blob.
@@ -125,7 +125,7 @@ export class CredentialVaultService {
   }
 
   async remove(accountId: string): Promise<void> {
-    await this.prisma.credential.deleteMany({ where: { accountId } });
+    await this.db.credential.deleteMany({ where: { accountId } });
   }
 
   private contextFor(accountId: string): Record<string, string> {

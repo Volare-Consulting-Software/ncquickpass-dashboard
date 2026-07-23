@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { DbClient } from '../../database/db-client';
 import { NcqpService } from '../ncqp/ncqp.service';
 import { computeWindows, parseRanges, WindowDay } from './schedule-window';
 import { overlaps } from './conflict';
@@ -53,13 +53,13 @@ export class MaterializationService {
   private readonly logger = new Logger(MaterializationService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly db: DbClient,
     private readonly ncqp: NcqpService,
   ) {}
 
   /** Reconcile every enabled schedule for the tenant. */
   async reconcileAccount(ctx: MaterializeContext): Promise<ReconcileResult> {
-    const schedules = await this.prisma.weeklySchedule.findMany({
+    const schedules = await this.db.weeklySchedule.findMany({
       where: { accountId: ctx.accountId, enabled: true },
       include: { days: true },
     });
@@ -73,7 +73,7 @@ export class MaterializationService {
   }
 
   async reconcileSchedule(ctx: MaterializeContext, scheduleId: string): Promise<ReconcileResult> {
-    const schedule = await this.prisma.weeklySchedule.findFirst({
+    const schedule = await this.db.weeklySchedule.findFirst({
       where: { id: scheduleId, accountId: ctx.accountId },
       include: { days: true },
     });
@@ -89,7 +89,7 @@ export class MaterializationService {
       new Date(),
     );
     // Only this schedule's own (weekly) rows — never diff or cancel ad-hoc ones.
-    const existing = await this.prisma.hOVDeclaration.findMany({
+    const existing = await this.db.hOVDeclaration.findMany({
       where: {
         accountId: ctx.accountId,
         transponderNumber: schedule.transponderNumber,
@@ -116,7 +116,7 @@ export class MaterializationService {
           createdByUserId: ctx.userId,
           option: 'DateInTheFuture',
         });
-        await this.prisma.hOVDeclaration.upsert({
+        await this.db.hOVDeclaration.upsert({
           where: {
             accountId_transponderNumber_windowStart_windowEnd: {
               accountId: ctx.accountId,
@@ -162,7 +162,7 @@ export class MaterializationService {
   }
 
   async listFuture(accountId: string): Promise<FutureDeclarationView[]> {
-    const rows = await this.prisma.hOVDeclaration.findMany({
+    const rows = await this.db.hOVDeclaration.findMany({
       where: { accountId, status: DeclarationStatus.Materialized, windowEnd: { gte: new Date() } },
       orderBy: { windowStart: 'asc' },
     });
@@ -190,7 +190,7 @@ export class MaterializationService {
       createdByUserId: ctx.userId,
       option: 'DateInTheFuture',
     });
-    const row = await this.prisma.hOVDeclaration.upsert({
+    const row = await this.db.hOVDeclaration.upsert({
       where: {
         accountId_transponderNumber_windowStart_windowEnd: {
           accountId: ctx.accountId,
@@ -225,7 +225,7 @@ export class MaterializationService {
     start: Date,
     end: Date,
   ): Promise<FutureDeclarationView[]> {
-    const rows = await this.prisma.hOVDeclaration.findMany({
+    const rows = await this.db.hOVDeclaration.findMany({
       where: {
         accountId,
         transponderNumber,
@@ -268,7 +268,7 @@ export class MaterializationService {
   /** Cancel one materialized declaration, verifying tenant ownership. */
   async cancelOne(ctx: MaterializeContext, id: string): Promise<{ canceled: boolean }> {
     if (!id) throw new BadRequestException('id is required');
-    const row = await this.prisma.hOVDeclaration.findFirst({
+    const row = await this.db.hOVDeclaration.findFirst({
       where: { id, accountId: ctx.accountId },
     });
     if (!row) throw new NotFoundException('Declaration not found');
@@ -281,7 +281,7 @@ export class MaterializationService {
    * Ad-hoc declarations are independent and left untouched.
    */
   async cancelForTransponder(ctx: MaterializeContext, transponderNumber: string): Promise<number> {
-    const rows = await this.prisma.hOVDeclaration.findMany({
+    const rows = await this.db.hOVDeclaration.findMany({
       where: {
         accountId: ctx.accountId,
         transponderNumber,
@@ -305,7 +305,7 @@ export class MaterializationService {
   ): Promise<boolean> {
     try {
       if (ncqpDeclarationId) await this.ncqp.cancelHov(ctx.token, ncqpDeclarationId, ctx.userId);
-      await this.prisma.hOVDeclaration.update({ where: { id }, data: { status } });
+      await this.db.hOVDeclaration.update({ where: { id }, data: { status } });
       return true;
     } catch (err) {
       this.logger.warn(

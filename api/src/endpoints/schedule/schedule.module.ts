@@ -10,8 +10,8 @@ import { ScheduleCron } from './schedule.cron';
 
 /**
  * Weekly HOV schedule: persistence, materialization into NCQP declarations, the
- * encrypted credential vault, and the background reconcile cron. PrismaService
- * comes from the global PrismaModule; NcqpService from NcqpModule.
+ * encrypted credential vault, and the background reconcile cron. DbClient
+ * comes from the global DatabaseModule; NcqpService from NcqpModule.
  */
 @Module({
   imports: [NcqpModule, AuthModule],
