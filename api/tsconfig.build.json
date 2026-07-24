@@ -1,4 +1,12 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts", "prisma.config.ts"]
+  // rootDir pins the emit layout to dist/main.js. Without it, tsc infers the root
+  // from the common ancestor of all compiled files, so any .ts pulled in from
+  // outside src/ (e.g. the prisma/dataseed seeders) silently relocates the output
+  // to dist/src/main.js and breaks the container's `node dist/main.js` entrypoint.
+  // With it set, such a stray file fails the build loudly instead.
+  "compilerOptions": {
+    "rootDir": "./src"
+  },
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts", "prisma", "prisma.config.ts"]
 }
