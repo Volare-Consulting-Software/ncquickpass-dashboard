@@ -186,7 +186,9 @@
   font-size: 0.88rem;
   white-space: pre-line;
 
-  .hl {
+  /* ::ng-deep because the note is bound via [innerHTML]; injected spans don't
+     carry this component's encapsulation attribute, so a scoped rule can't reach them. */
+  ::ng-deep .hl {
     font-weight: 700;
     padding: 0 0.28rem;
     border-radius: 6px;
