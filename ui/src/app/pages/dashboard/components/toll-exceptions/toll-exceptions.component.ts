@@ -41,23 +41,38 @@ export class TollExceptionsComponent {
   ) {}
 
   private static escapeHtml(value: string): string {
-    return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   /**
-   * Highlight the case number, currency amounts ($13.50) and dates (10/09/2024) in
-   * a note so they stand out like the status chip. The source text is already
-   * HTML-stripped; we re-escape then wrap matches, so the bound HTML is safe.
+   * Highlight the case number, currency amounts ($13.50), dates (10/09/2024) and
+   * URLs in a note so they stand out like the status chip; URLs become links that
+   * open in a new tab. A single combined pass avoids one match nesting inside
+   * another (e.g. the date inside a URL path). The text is already HTML-stripped
+   * and re-escaped, so the bound HTML is safe.
    */
   highlight(text: string, caseNumber?: string): SafeHtml {
-    let marked = TollExceptionsComponent.escapeHtml(text);
+    const escaped = TollExceptionsComponent.escapeHtml(text);
+    const parts = [
+      String.raw`(?<url>https?:\/\/[^\s<]*[^\s<.,;:!?)\]])`,
+      String.raw`(?<money>\$\d[\d,]*(?:\.\d{2})?)`,
+      String.raw`(?<date>\b\d{1,2}\/\d{1,2}\/\d{2,4}\b)`,
+    ];
     if (caseNumber) {
-      const escaped = caseNumber.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      marked = marked.replace(new RegExp(`\\b${escaped}\\b`, 'g'), (m) => `<span class="hl">${m}</span>`);
+      parts.push(`(?<case>\\b${caseNumber.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b)`);
     }
-    marked = marked
-      .replace(/\$\d[\d,]*(?:\.\d{2})?/g, (m) => `<span class="hl">${m}</span>`)
-      .replace(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g, (m) => `<span class="hl">${m}</span>`);
+    const pattern = new RegExp(parts.join('|'), 'g');
+    const marked = escaped.replace(pattern, (match: string, ...rest: unknown[]) => {
+      const groups = rest[rest.length - 1] as Record<string, string | undefined> | undefined;
+      if (groups?.['url']) {
+        return `<a class="hl" href="${match}" target="_blank" rel="noopener noreferrer">${match}</a>`;
+      }
+      return `<span class="hl">${match}</span>`;
+    });
     return this.sanitizer.bypassSecurityTrustHtml(marked);
   }
 

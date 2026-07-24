@@ -195,6 +195,10 @@
     background: var(--accent-dim);
     color: var(--accent-dark);
     white-space: nowrap;
+    text-decoration: none;
+  }
+  ::ng-deep a.hl:hover {
+    text-decoration: underline;
   }
 }
 
