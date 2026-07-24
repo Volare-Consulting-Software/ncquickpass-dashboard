@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
-import { RoadGroupSeeder } from './roadGroupSeeder';
+import { RoadGroupSeeder } from './seeders/roadGroupSeeder';
 import { SeederRunner } from './seederRunner';
 
 /**

@@ -1,5 +1,5 @@
-import { DbClient } from '../../src/database/db-client';
-import { ISeeder, Seeder } from './seeder';
+import { DbClient } from '../../../src/database/db-client';
+import { ISeeder, Seeder } from '../seeder';
 
 interface RoadGroupRecord {
   id: string;

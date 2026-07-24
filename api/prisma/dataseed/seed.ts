@@ -3,9 +3,9 @@ import 'dotenv/config';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { DatabaseModule } from '../src/database/database.module';
-import { DataseedModule } from './dataseed/dataseedModule';
-import { SeederRunner } from './dataseed/seederRunner';
+import { DatabaseModule } from '../../src/database/database.module';
+import { DataseedModule } from './dataseedModule';
+import { SeederRunner } from './seederRunner';
 
 /** Minimal context: the global config + database, plus the seeders. */
 @Module({

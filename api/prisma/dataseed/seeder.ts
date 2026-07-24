@@ -7,8 +7,8 @@ export const SEEDER = 'dataseed:seeder';
 /**
  * Seeds one table: a typed collection of records and how to upsert one. Generic
  * over the record type `T` so every implementation is type-checked against its
- * own records. Decorate the class with `@Seeder()` and register it as a provider
- * in DataseedModule — the runner discovers it through the DI container.
+ * own records. Add a `<table>Seeder.ts` under `seeders/`, decorate the class with
+ * `@Seeder()`, and list it in DataseedModule — the runner discovers it via DI.
  */
 export interface ISeeder<T = unknown> {
   /** The records this seeder manages. */
