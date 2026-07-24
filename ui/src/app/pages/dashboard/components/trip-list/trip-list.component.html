@@ -18,7 +18,7 @@
       </label>
       <div class="range-total">
         <span class="range-total-label">
-          {{ selectedHighway === 'all' ? 'Total:' : selectedHighway + ' total' }}
+          {{ selectedGroup === 'all' ? 'Total:' : selectedGroup + ' total' }}
         </span>
         @if (isNoCost(visibleTotal)) {
           <span class="no-cost-chip">No Cost</span>
@@ -28,15 +28,15 @@
     </div>
   </header>
 
-  @if (highways.length > 1 || hasDisputable) {
+  @if (groupLabels.length > 1 || hasDisputable) {
     <div class="filters">
-      @if (highways.length > 1) {
-        <button class="chip" [class.active]="selectedHighway === 'all'" (click)="setFilter('all')">
+      @if (groupLabels.length > 1) {
+        <button class="chip" [class.active]="selectedGroup === 'all'" (click)="setFilter('all')">
           All
         </button>
-        @for (h of highways; track h) {
-          <button class="chip" [class.active]="selectedHighway === h" (click)="setFilter(h)">
-            {{ h }}
+        @for (g of groupLabels; track g) {
+          <button class="chip" [class.active]="selectedGroup === g" (click)="setFilter(g)">
+            {{ g }}
           </button>
         }
       }
@@ -72,7 +72,7 @@
                   {{ trip.start | date: 'MMM d' }} – {{ trip.end | date: 'MMM d' }}
                 </span>
               }
-              <span class="hwy-chip" [class.i77]="trip.highway === 'I-77'">{{ trip.highway }}</span>
+              <span class="hwy-chip" [class.grouped]="!!trip.roadGroup">{{ trip.roadGroupLabel }}</span>
               @if (trip.disputable) {
                 <span class="disputable-chip">Disputable</span>
               }

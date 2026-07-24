@@ -1,12 +1,5 @@
 import { TransactionView } from './models/TransactionView';
-import {
-  groupIntoTrips,
-  highwayOf,
-  HIGHWAY_I77,
-  HIGHWAY_OTHER,
-  isHovRoute,
-  replenishments,
-} from './trip-grouping';
+import { groupIntoTrips, replenishments } from './trip-grouping';
 
 function toll(overrides: Partial<TransactionView>): TransactionView {
   return {
@@ -19,29 +12,13 @@ function toll(overrides: Partial<TransactionView>): TransactionView {
     creditAmount: null,
     transactionType: 'Toll Charge',
     vehicleClass: '1',
-    roadGroup: null,
+    roadGroup: 'i77-express',
     disputable: false,
     ...overrides,
   };
 }
 
-describe('isHovRoute / highwayOf', () => {
-  it('isHovRoute_withMarkerPresent_returnsTrue', () => {
-    expect(isHovRoute('I-77 EL Exit 28')).toBe(true);
-    expect(isHovRoute('77 el gilead')).toBe(true);
-  });
-
-  it('isHovRoute_withoutMarker_returnsFalse', () => {
-    expect(isHovRoute('Ghent South / AS')).toBe(false);
-    expect(isHovRoute('')).toBe(false);
-    expect(isHovRoute(null)).toBe(false);
-  });
-
-  it('highwayOf_withI77Exit_returnsI77_otherwiseOther', () => {
-    expect(highwayOf('I-77 EL Exit 16')).toBe(HIGHWAY_I77);
-    expect(highwayOf('Ghent South / AS')).toBe(HIGHWAY_OTHER);
-  });
-});
+const LABELS = new Map([['i77-express', 'I-77']]);
 
 describe('groupIntoTrips', () => {
   it('groupIntoTrips_withTollsWithinFiveMinutes_returnsSingleTrip', () => {
@@ -50,11 +27,12 @@ describe('groupIntoTrips', () => {
       toll({ transactionDate: '2026-07-11T10:03:00', debitAmount: 1.5 }),
       toll({ transactionDate: '2026-07-11T10:06:00', debitAmount: 2.0 }),
     ];
-    const trips = groupIntoTrips(txns);
+    const trips = groupIntoTrips(txns, LABELS);
     expect(trips.length).toBe(1);
     expect(trips[0].transactions.length).toBe(3);
     expect(trips[0].total).toBe(4.5);
-    expect(trips[0].highway).toBe(HIGHWAY_I77);
+    expect(trips[0].roadGroup).toBe('i77-express');
+    expect(trips[0].roadGroupLabel).toBe('I-77');
   });
 
   it('groupIntoTrips_withGapOverFiveMinutes_startsNewTrip', () => {
@@ -63,7 +41,7 @@ describe('groupIntoTrips', () => {
       toll({ transactionDate: '2026-07-11T10:03:00' }),
       toll({ transactionDate: '2026-07-11T10:20:00' }),
     ];
-    expect(groupIntoTrips(txns).length).toBe(2);
+    expect(groupIntoTrips(txns, LABELS).length).toBe(2);
   });
 
   it('groupIntoTrips_multipleTrips_returnsNewestFirst', () => {
@@ -71,26 +49,26 @@ describe('groupIntoTrips', () => {
       toll({ transactionDate: '2026-07-10T08:00:00' }),
       toll({ transactionDate: '2026-07-12T09:00:00' }),
     ];
-    const trips = groupIntoTrips(txns);
+    const trips = groupIntoTrips(txns, LABELS);
     expect(trips.length).toBe(2);
     expect(trips[0].start).toBe('2026-07-12T09:00:00');
   });
 
-  it('groupIntoTrips_withDifferentHighwaysInWindow_splitsByHighway', () => {
+  it('groupIntoTrips_withDifferentRoadGroupsInWindow_splitsByGroup', () => {
     const txns = [
-      toll({ exitLocation: 'I-77 EL Exit 1', transactionDate: '2026-07-11T10:00:00' }),
-      toll({ exitLocation: 'Ghent South / AS', transactionDate: '2026-07-11T10:02:00' }),
+      toll({ roadGroup: 'i77-express', transactionDate: '2026-07-11T10:00:00' }),
+      toll({ roadGroup: null, transactionDate: '2026-07-11T10:02:00' }),
     ];
-    const trips = groupIntoTrips(txns);
+    const trips = groupIntoTrips(txns, LABELS);
     expect(trips.length).toBe(2);
-    expect(trips.map((t) => t.highway).sort()).toEqual([HIGHWAY_I77, HIGHWAY_OTHER]);
+    expect(trips.map((t) => t.roadGroupLabel).sort()).toEqual(['I-77', 'Other']);
   });
 
-  it('groupIntoTrips_withNonI77Tolls_includesThemAsOther', () => {
-    const txns = [toll({ exitLocation: 'Ghent South / AS' })];
-    const trips = groupIntoTrips(txns);
+  it('groupIntoTrips_withUnclassifiedTolls_labelsThemOther', () => {
+    const trips = groupIntoTrips([toll({ roadGroup: null })], LABELS);
     expect(trips.length).toBe(1);
-    expect(trips[0].highway).toBe('Other');
+    expect(trips[0].roadGroup).toBeNull();
+    expect(trips[0].roadGroupLabel).toBe('Other');
   });
 
   it('groupIntoTrips_ignoresReplenishRows', () => {
@@ -98,7 +76,7 @@ describe('groupIntoTrips', () => {
       toll({ transactionDate: '2026-07-11T10:00:00' }),
       toll({ activityTypeName: 'Replenish', transactionDate: '2026-07-11T10:02:00' }),
     ];
-    const trips = groupIntoTrips(txns);
+    const trips = groupIntoTrips(txns, LABELS);
     expect(trips.length).toBe(1);
     expect(trips[0].transactions.length).toBe(1);
   });
@@ -108,7 +86,7 @@ describe('groupIntoTrips', () => {
       toll({ transactionDate: '2026-07-11T10:00:00' }),
       toll({ transactionDate: '2026-07-11T10:05:00' }),
     ];
-    expect(groupIntoTrips(txns).length).toBe(1);
+    expect(groupIntoTrips(txns, LABELS).length).toBe(1);
   });
 
   it('groupIntoTrips_withAnyDisputableToll_marksTripDisputable', () => {
@@ -116,11 +94,11 @@ describe('groupIntoTrips', () => {
       toll({ transactionDate: '2026-07-11T10:00:00', disputable: true }),
       toll({ transactionDate: '2026-07-11T10:03:00' }),
     ];
-    expect(groupIntoTrips(txns)[0].disputable).toBe(true);
+    expect(groupIntoTrips(txns, LABELS)[0].disputable).toBe(true);
   });
 
   it('groupIntoTrips_noDisputableTolls_tripNotDisputable', () => {
-    expect(groupIntoTrips([toll({})])[0].disputable).toBe(false);
+    expect(groupIntoTrips([toll({})], LABELS)[0].disputable).toBe(false);
   });
 });
 
