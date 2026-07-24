@@ -1,5 +1,5 @@
 import { MaterializationService } from '../../../src/endpoints/schedule/materialization.service';
-import { PrismaService } from '../../../src/prisma/prisma.service';
+import { DbClient } from '../../../src/database/db-client';
 import { NcqpService } from '../../../src/endpoints/ncqp/ncqp.service';
 import { DeclarationStatus } from '../../../src/endpoints/schedule/schedule.constants';
 
@@ -12,7 +12,7 @@ function allDayWeek() {
 }
 
 function makeMocks(schedule: unknown, existing: unknown[]) {
-  const prisma = {
+  const db = {
     weeklySchedule: { findFirst: jest.fn().mockResolvedValue(schedule) },
     hOVDeclaration: {
       findMany: jest.fn().mockResolvedValue(existing),
@@ -25,10 +25,10 @@ function makeMocks(schedule: unknown, existing: unknown[]) {
     cancelHov: jest.fn().mockResolvedValue('Canceled'),
   };
   const service = new MaterializationService(
-    prisma as unknown as PrismaService,
+    db as unknown as DbClient,
     ncqp as unknown as NcqpService,
   );
-  return { prisma, ncqp, service };
+  return { db, ncqp, service };
 }
 
 describe('MaterializationService.reconcileSchedule', () => {
@@ -45,10 +45,10 @@ describe('MaterializationService.reconcileSchedule', () => {
       horizonDays: 7,
       days: allDayWeek(),
     };
-    const { ncqp, prisma, service } = makeMocks(schedule, []);
+    const { ncqp, db, service } = makeMocks(schedule, []);
     const result = await service.reconcileSchedule(CTX, 's1');
     expect(ncqp.activateHov).toHaveBeenCalled();
-    expect(prisma.hOVDeclaration.upsert).toHaveBeenCalled();
+    expect(db.hOVDeclaration.upsert).toHaveBeenCalled();
     expect(result.created).toBeGreaterThan(0);
     expect(ncqp.cancelHov).not.toHaveBeenCalled();
   });
@@ -72,10 +72,10 @@ describe('MaterializationService.reconcileSchedule', () => {
         ncqpDeclarationId: '999',
       },
     ];
-    const { ncqp, prisma, service } = makeMocks(schedule, existing);
+    const { ncqp, db, service } = makeMocks(schedule, existing);
     const result = await service.reconcileSchedule(CTX, 's1');
     expect(ncqp.cancelHov).toHaveBeenCalledWith('t', '999', 'u');
-    expect(prisma.hOVDeclaration.update).toHaveBeenCalledWith({
+    expect(db.hOVDeclaration.update).toHaveBeenCalledWith({
       where: { id: 'row1' },
       data: { status: DeclarationStatus.Canceled },
     });

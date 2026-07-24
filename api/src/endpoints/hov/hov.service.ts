@@ -1,8 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { DateTime } from 'luxon';
 import { NcqpService } from '../ncqp/ncqp.service';
+import { DbClient } from '../../database/db-client';
+import { DeclarationSource, DeclarationStatus } from '../schedule/schedule.constants';
 import { NcqpDeclaration, NcqpVehicleTag } from '../../models/ncqp/ncqp.types';
 import { NcqpSession } from '../auth/session/session';
 import { ActivateDto } from '../../models/hov/ActivateDto';
+
+/** NC is Eastern; a "rest of today" declaration ends at local end-of-day. */
+const HOV_TIMEZONE = 'America/New_York';
 
 export interface VehicleView {
   transponderNumber: string;
@@ -24,7 +30,12 @@ export interface DeclarationView {
 
 @Injectable()
 export class HovService {
-  constructor(private readonly ncqp: NcqpService) {}
+  private readonly logger = new Logger(HovService.name);
+
+  constructor(
+    private readonly ncqp: NcqpService,
+    private readonly db: DbClient,
+  ) {}
 
   async getVehicles(session: NcqpSession): Promise<VehicleView[]> {
     const raw = await this.ncqp.getVehicles(session.token);
@@ -55,23 +66,91 @@ export class HovService {
     session: NcqpSession,
     dto: ActivateDto,
   ): Promise<{ declarationId: number }> {
-    const now = new Date().toISOString();
+    const start = new Date();
     const useCustom = !!dto.endDateTime;
+    const end = useCustom
+      ? new Date(dto.endDateTime as string)
+      : DateTime.fromJSDate(start, { zone: HOV_TIMEZONE }).endOf('day').toUTC().toJSDate();
     const declarationId = await this.ncqp.activateHov(session.token, {
       accountId: session.accountId,
       transponderNumber: dto.transponderNumber,
       location: dto.location || 'I-77',
-      startDateTime: now,
-      endDateTime: useCustom ? new Date(dto.endDateTime as string).toISOString() : null,
+      startDateTime: start.toISOString(),
+      endDateTime: useCustom ? end.toISOString() : null,
       createdByUserId: session.userId,
       option: useCustom ? 'DateInTheFuture' : 'RestOfToday',
     });
+    await this.record(session, dto.transponderNumber, start, end, declarationId);
     return { declarationId };
   }
 
   async cancel(session: NcqpSession, declarationId: string): Promise<{ result: string }> {
     const result = await this.ncqp.cancelHov(session.token, declarationId, session.userId);
+    // Best-effort ledger sync; the cancel at NCQP already succeeded.
+    try {
+      await this.db.hOVDeclaration.updateMany({
+        where: {
+          accountId: session.accountId,
+          ncqpDeclarationId: declarationId,
+          status: DeclarationStatus.Materialized,
+        },
+        data: { status: DeclarationStatus.Canceled },
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Failed to sync canceled declaration ${declarationId}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
     return { result };
+  }
+
+  /**
+   * Record an immediate "activate now" declaration so every declaration the user
+   * creates lands in the ledger, not only future-dated ones. Best-effort: the
+   * NCQP declaration already exists, so a DB hiccup must not fail the request.
+   */
+  private async record(
+    session: NcqpSession,
+    transponderNumber: string,
+    windowStart: Date,
+    windowEnd: Date,
+    declarationId: number,
+  ): Promise<void> {
+    try {
+      await this.db.hOVDeclaration.upsert({
+        where: {
+          accountId_transponderNumber_windowStart_windowEnd: {
+            accountId: session.accountId,
+            transponderNumber,
+            windowStart,
+            windowEnd,
+          },
+        },
+        create: {
+          accountId: session.accountId,
+          scheduleId: null,
+          source: DeclarationSource.Adhoc,
+          transponderNumber,
+          windowStart,
+          windowEnd,
+          ncqpDeclarationId: String(declarationId),
+          status: DeclarationStatus.Materialized,
+        },
+        update: {
+          source: DeclarationSource.Adhoc,
+          ncqpDeclarationId: String(declarationId),
+          status: DeclarationStatus.Materialized,
+        },
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Failed to record declaration for ${transponderNumber}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
   }
 
   private static transponderOf(v: NcqpVehicleTag): string {

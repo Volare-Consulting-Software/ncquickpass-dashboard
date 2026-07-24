@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { DbClient } from '../../database/db-client';
 import type { Prisma } from '../../generated/prisma/client';
 import { PutScheduleDto } from '../../models/schedule/PutScheduleDto';
 import { parseRanges } from './schedule-window';
@@ -35,15 +35,15 @@ export interface ScheduleView {
  */
 @Injectable()
 export class ScheduleService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly db: DbClient) {}
 
   async getSchedule(accountId: string, transponderNumber: string): Promise<ScheduleView> {
     const transponder = ScheduleService.requireTransponder(transponderNumber);
-    const schedule = await this.prisma.weeklySchedule.findUnique({
+    const schedule = await this.db.weeklySchedule.findUnique({
       where: { accountId_transponderNumber: { accountId, transponderNumber: transponder } },
       include: { days: { orderBy: { dayOfWeek: 'asc' } } },
     });
-    const credentialOnFile = (await this.prisma.credential.count({ where: { accountId } })) > 0;
+    const credentialOnFile = (await this.db.credential.count({ where: { accountId } })) > 0;
 
     if (!schedule) {
       return {
@@ -75,7 +75,7 @@ export class ScheduleService {
     const timezone = dto.timezone || DEFAULT_TIMEZONE;
     const days = ScheduleService.validateDays(dto.days);
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.db.$transaction(async (tx) => {
       const schedule = await tx.weeklySchedule.upsert({
         where: { accountId_transponderNumber: { accountId, transponderNumber: transponder } },
         create: { accountId, transponderNumber: transponder, enabled: dto.enabled, timezone },
@@ -104,7 +104,7 @@ export class ScheduleService {
     transponderNumber: string,
   ): Promise<{ deleted: boolean }> {
     const transponder = ScheduleService.requireTransponder(transponderNumber);
-    const result = await this.prisma.weeklySchedule.deleteMany({
+    const result = await this.db.weeklySchedule.deleteMany({
       where: { accountId, transponderNumber: transponder },
     });
     return { deleted: result.count > 0 };
@@ -112,12 +112,12 @@ export class ScheduleService {
 
   /** Whether the tenant has any schedule at all (drives vault teardown on delete). */
   async hasAnySchedule(accountId: string): Promise<boolean> {
-    return (await this.prisma.weeklySchedule.count({ where: { accountId } })) > 0;
+    return (await this.db.weeklySchedule.count({ where: { accountId } })) > 0;
   }
 
   /** Find a schedule's id for a transponder, if it exists. */
   async findScheduleId(accountId: string, transponderNumber: string): Promise<string | null> {
-    const row = await this.prisma.weeklySchedule.findUnique({
+    const row = await this.db.weeklySchedule.findUnique({
       where: { accountId_transponderNumber: { accountId, transponderNumber } },
       select: { id: true },
     });

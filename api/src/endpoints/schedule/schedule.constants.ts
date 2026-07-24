@@ -7,7 +7,7 @@ export enum DeclarationStatus {
   Superseded = 'superseded',
 }
 
-/** How a declaration was derived. */
+/** How a declaration was derived: from a weekly schedule, or a one-off the user set. */
 export enum DeclarationSource {
   Weekly = 'weekly',
   Adhoc = 'adhoc',

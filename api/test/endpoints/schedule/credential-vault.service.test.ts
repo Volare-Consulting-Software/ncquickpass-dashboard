@@ -1,6 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { CredentialVaultService } from '../../../src/endpoints/schedule/credential-vault.service';
-import { PrismaService } from '../../../src/prisma/prisma.service';
+import { DbClient } from '../../../src/database/db-client';
 
 const KEY = 'a'.repeat(64); // 32 bytes hex
 
@@ -8,9 +8,9 @@ function config(key: string | undefined): ConfigService {
   return { get: (k: string) => (k === 'CREDENTIAL_KEY_LOCAL' ? key : undefined) } as unknown as ConfigService;
 }
 
-function prismaWithStore() {
+function dbWithStore() {
   let stored: Record<string, string> | null = null;
-  const prisma = {
+  const db = {
     credential: {
       upsert: jest.fn(async ({ create }: { create: Record<string, string> }) => {
         stored = create;
@@ -25,7 +25,7 @@ function prismaWithStore() {
     },
   };
   return {
-    prisma: prisma as unknown as PrismaService,
+    db: db as unknown as DbClient,
     get: () => stored,
     set: (v: Record<string, string> | null) => {
       stored = v;
@@ -35,8 +35,8 @@ function prismaWithStore() {
 
 describe('CredentialVaultService', () => {
   it('store_thenLoad_roundTripsPlaintext', async () => {
-    const store = prismaWithStore();
-    const vault = new CredentialVaultService(config(KEY), store.prisma);
+    const store = dbWithStore();
+    const vault = new CredentialVaultService(config(KEY), store.db);
     await vault.store('ACC', 'user@example.com', 's3cret!');
     await expect(vault.load('ACC')).resolves.toEqual({
       username: 'user@example.com',
@@ -45,8 +45,8 @@ describe('CredentialVaultService', () => {
   });
 
   it('load_withTamperedAuthTag_throws', async () => {
-    const store = prismaWithStore();
-    const vault = new CredentialVaultService(config(KEY), store.prisma);
+    const store = dbWithStore();
+    const vault = new CredentialVaultService(config(KEY), store.db);
     await vault.store('ACC', 'u', 'p');
     const row = store.get()!;
     store.set({ ...row, authTag: Buffer.alloc(16).toString('base64') }); // valid length, wrong tag
@@ -54,8 +54,8 @@ describe('CredentialVaultService', () => {
   });
 
   it('store_withoutKey_isDisabledAndThrows', async () => {
-    const store = prismaWithStore();
-    const vault = new CredentialVaultService(config(''), store.prisma);
+    const store = dbWithStore();
+    const vault = new CredentialVaultService(config(''), store.db);
     expect(vault.enabled).toBe(false);
     await expect(vault.store('ACC', 'u', 'p')).rejects.toThrow();
   });
