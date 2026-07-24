@@ -7,8 +7,10 @@ import { AuthService } from '../../core/services/auth.service';
 import { HovService } from '../../core/services/hov.service';
 import { TransactionService } from '../../core/services/transaction.service';
 import { AccountService } from '../../core/services/account.service';
+import { RoadGroupService } from '../../core/services/road-group.service';
 import { AccountSummary } from '../../core/models/AccountSummary';
 import { DeclarationView } from '../../core/models/DeclarationView';
+import { RoadGroup } from '../../core/models/RoadGroup';
 import { TransactionView } from '../../core/models/TransactionView';
 import { VehicleView } from '../../core/models/VehicleView';
 import { groupIntoTrips, replenishments } from '../../core/trip-grouping';
@@ -54,6 +56,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private readonly hov = inject(HovService);
   private readonly transactionSvc = inject(TransactionService);
   private readonly accountSvc = inject(AccountService);
+  private readonly roadGroupSvc = inject(RoadGroupService);
   private readonly router = inject(Router);
 
   /** Auto-dismiss timer for the action toast. */
@@ -66,8 +69,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   readonly vehicles = signal<VehicleView[]>([]);
   readonly declarations = signal<DeclarationView[]>([]);
   readonly transactions = signal<TransactionView[]>([]);
+  readonly roadGroups = signal<RoadGroup[]>([]);
   readonly account = signal<AccountSummary | null>(null);
-  readonly trips = computed(() => groupIntoTrips(this.transactions()));
+  private readonly roadGroupLabels = computed(
+    () => new Map(this.roadGroups().map((g) => [g.id, g.label])),
+  );
+  readonly trips = computed(() => groupIntoTrips(this.transactions(), this.roadGroupLabels()));
   readonly replenishments = computed(() => replenishments(this.transactions()));
 
   readonly days = signal(90);
@@ -111,11 +118,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
       declarations: this.hov.getStatus(),
       transactions: this.transactionSvc.getTransactions(this.days()),
       account: this.accountSvc.getSummary(),
+      roadGroups: this.roadGroupSvc.getRoadGroups(),
     }).subscribe({
       next: (res) => {
         this.vehicles.set(res.vehicles);
         this.declarations.set(res.declarations);
         this.transactions.set(res.transactions);
+        this.roadGroups.set(res.roadGroups);
         this.account.set(res.account);
         this.loading.set(false);
       },

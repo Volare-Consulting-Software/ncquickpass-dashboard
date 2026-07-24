@@ -18,7 +18,7 @@
       </label>
       <div class="range-total">
         <span class="range-total-label">
-          {{ selectedHighway === 'all' ? 'Total:' : selectedHighway + ' total' }}
+          {{ selectedGroup === 'all' ? 'Total:' : selectedGroup + ' total' }}
         </span>
         @if (isNoCost(visibleTotal)) {
           <span class="no-cost-chip">No Cost</span>
@@ -28,14 +28,27 @@
     </div>
   </header>
 
-  @if (highways.length > 1) {
+  @if (groupLabels.length > 1 || hasDisputable) {
     <div class="filters">
-      <button class="chip" [class.active]="selectedHighway === 'all'" (click)="setFilter('all')">
-        All
-      </button>
-      @for (h of highways; track h) {
-        <button class="chip" [class.active]="selectedHighway === h" (click)="setFilter(h)">
-          {{ h }}
+      @if (groupLabels.length > 1) {
+        <button class="chip" [class.active]="selectedGroup === 'all'" (click)="setFilter('all')">
+          All
+        </button>
+        @for (g of groupLabels; track g) {
+          <button class="chip" [class.active]="selectedGroup === g" (click)="setFilter(g)">
+            {{ g }}
+          </button>
+        }
+      }
+      @if (hasDisputable) {
+        <button
+          class="chip chip-disputable"
+          [class.active]="disputableOnly"
+          (click)="toggleDisputable()"
+          [attr.aria-label]="'Disputable filter. ' + disputableHint"
+        >
+          Disputable ({{ disputableCount }})
+          <span class="chip-tooltip" role="tooltip">{{ disputableHint }}</span>
         </button>
       }
     </div>
@@ -59,7 +72,10 @@
                   {{ trip.start | date: 'MMM d' }} – {{ trip.end | date: 'MMM d' }}
                 </span>
               }
-              <span class="hwy-chip" [class.i77]="trip.highway === 'I-77'">{{ trip.highway }}</span>
+              <span class="hwy-chip" [class.grouped]="!!trip.roadGroup">{{ trip.roadGroupLabel }}</span>
+              @if (trip.disputable) {
+                <span class="disputable-chip">Disputable</span>
+              }
             </span>
             @if (spansSingleDay(trip)) {
               <span class="time">
@@ -68,12 +84,12 @@
             }
           </span>
           <span class="trip-summary">
-            <span class="count">
-              {{ trip.transactions.length }} toll{{ trip.transactions.length === 1 ? '' : 's' }}
-            </span>
             @if (isNoCost(trip.total)) {
               <span class="no-cost-chip">No Cost</span>
             }
+            <span class="count">
+              {{ trip.transactions.length }} toll{{ trip.transactions.length === 1 ? '' : 's' }}
+            </span>
             <span class="total">{{ trip.total | currency }}</span>
           </span>
         </button>
@@ -82,7 +98,12 @@
           <ul class="tolls">
             @for (t of trip.transactions; track $index) {
               <li class="toll">
-                <span class="toll-loc">{{ t.exitLocation }}</span>
+                <span class="toll-loc">
+                  {{ t.exitLocation }}
+                  @if (t.disputable) {
+                    <span class="disputable-chip">Disputable</span>
+                  }
+                </span>
                 <span class="toll-time">{{ t.transactionDate | date: 'h:mm a' }}</span>
                 <span class="toll-amt">
                   @if (isNoCost(t.debitAmount)) {

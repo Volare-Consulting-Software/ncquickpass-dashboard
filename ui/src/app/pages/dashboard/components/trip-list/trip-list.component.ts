@@ -27,21 +27,41 @@ export class TripListComponent {
     return this.dayOptions.map((o) => ({ label: o.label, value: o.days }));
   }
 
-  selectedHighway = 'all';
+  /** Selected road-group label to filter by, or 'all'. */
+  selectedGroup = 'all';
+
+  /** When on, only disputable trips are shown (independent of the road-group filter). */
+  disputableOnly = false;
+
+  /** Explains what the Disputable filter means (shown on hover). */
+  readonly disputableHint =
+    'Filters for tolls that occurred while an HOV declaration was made within this application, ' +
+    'for a roadway that permits HOV declarations.';
 
   private readonly expanded = new Set<number>();
 
-  get highways(): string[] {
-    return Array.from(new Set(this.trips.map((t) => t.highway)));
+  /** Distinct road-group labels present in the current trips, for the filter chips. */
+  get groupLabels(): string[] {
+    return Array.from(new Set(this.trips.map((t) => t.roadGroupLabel)));
+  }
+
+  get hasDisputable(): boolean {
+    return this.trips.some((t) => t.disputable);
+  }
+
+  get disputableCount(): number {
+    return this.trips.filter((t) => t.disputable).length;
   }
 
   get visibleTrips(): Trip[] {
-    return this.selectedHighway === 'all'
-      ? this.trips
-      : this.trips.filter((t) => t.highway === this.selectedHighway);
+    return this.trips.filter(
+      (t) =>
+        (this.selectedGroup === 'all' || t.roadGroupLabel === this.selectedGroup) &&
+        (!this.disputableOnly || t.disputable),
+    );
   }
 
-  /** Total spend across the currently visible trips (respects range + highway filter). */
+  /** Total spend across the currently visible trips (respects range + group filter). */
   get visibleTotal(): number {
     return this.visibleTrips.reduce((sum, t) => sum + t.total, 0);
   }
@@ -51,8 +71,13 @@ export class TripListComponent {
     return !amount;
   }
 
-  setFilter(highway: string): void {
-    this.selectedHighway = highway;
+  setFilter(group: string): void {
+    this.selectedGroup = group;
+    this.expanded.clear();
+  }
+
+  toggleDisputable(): void {
+    this.disputableOnly = !this.disputableOnly;
     this.expanded.clear();
   }
 
