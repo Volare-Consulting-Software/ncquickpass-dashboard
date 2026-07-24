@@ -1,9 +1,9 @@
 import { TransactionsService } from '../../../src/endpoints/transactions/transactions.service';
-import { NcqpService } from '../../../src/endpoints/ncqp/ncqp.service';
+import { NcqpTransactionsClient } from '../../../src/endpoints/ncqp/ncqp-transactions.client';
 import { DbClient } from '../../../src/database/db-client';
 import { RoadGroupService } from '../../../src/roads/road-group.service';
 import { NcqpSession } from '../../../src/endpoints/auth/session/session';
-import { NcqpTransaction } from '../../../src/models/ncqp/ncqp.types';
+import { NcqpTransaction } from '../../../src/models/ncqp/NcqpTransaction';
 
 const SESSION = { token: 't', userId: 'u', accountId: 'ACC' } as unknown as NcqpSession;
 
@@ -36,7 +36,7 @@ async function makeService(rows: NcqpTransaction[], windows: unknown[]) {
   const roads = new RoadGroupService(roadsDb as unknown as DbClient);
   await roads.onModuleInit();
   const service = new TransactionsService(
-    ncqp as unknown as NcqpService,
+    ncqp as unknown as NcqpTransactionsClient,
     db as unknown as DbClient,
     roads,
   );

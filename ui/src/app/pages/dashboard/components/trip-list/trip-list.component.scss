@@ -190,6 +190,29 @@
   color: #92400e;
   white-space: nowrap;
   vertical-align: middle;
+
+  &.is-action {
+    cursor: pointer;
+
+    &:hover {
+      background: #fde68a;
+    }
+  }
+}
+
+.btn-dispute {
+  font-size: 0.78rem;
+  padding: 0.3rem 0.6rem;
+}
+
+.pick-hint {
+  margin: 0 0 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: var(--accent-dark);
+  background: var(--accent-dim);
+  flex: 0 0 auto;
 }
 
 .trips {
@@ -234,6 +257,9 @@
 
   &:hover {
     background: var(--surface);
+  }
+  &.pickable:hover {
+    background: var(--accent-dim);
   }
 }
 

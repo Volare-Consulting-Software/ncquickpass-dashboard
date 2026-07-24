@@ -22,6 +22,11 @@ export class TripListComponent {
   @Input() dayOptions: RangeOption[] = [];
   @Input() loading = false;
   @Output() daysChange = new EventEmitter<number>();
+  /** Emits the trip whose tolls the user wants to dispute. */
+  @Output() openDispute = new EventEmitter<Trip>();
+
+  /** Whether the list is in "pick a trip to dispute" mode. */
+  picking = false;
 
   get rangeOptions(): SelectOption[] {
     return this.dayOptions.map((o) => ({ label: o.label, value: o.days }));
@@ -79,6 +84,22 @@ export class TripListComponent {
   toggleDisputable(): void {
     this.disputableOnly = !this.disputableOnly;
     this.expanded.clear();
+  }
+
+  togglePicking(): void {
+    this.picking = !this.picking;
+  }
+
+  /** In picking mode, clicking a trip starts a dispute for it. */
+  pick(trip: Trip): void {
+    this.openDispute.emit(trip);
+    this.picking = false;
+  }
+
+  /** Disputable-chip shortcut: dispute this trip without entering picking mode. */
+  startDispute(trip: Trip, event: Event): void {
+    event.stopPropagation();
+    this.openDispute.emit(trip);
   }
 
   toggle(index: number): void {

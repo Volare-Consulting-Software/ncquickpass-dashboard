@@ -1,0 +1,145 @@
+:host {
+  display: block;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.section-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+.section + .section {
+  border-top: 1px solid var(--border);
+  padding-top: 0.85rem;
+}
+
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+  font: inherit;
+
+  &:hover {
+    border-color: var(--accent);
+  }
+}
+.violation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+.row-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.row-title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.row-sub {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.v-amt {
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.empty {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.badge-approved {
+  background: #e6f4ea;
+  color: #1e7e34;
+}
+.badge-denied {
+  background: #fdecea;
+  color: #b3261e;
+}
+.badge-pending {
+  background: #fdf3d3;
+  color: #8a6100;
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.detail-status {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.detail-updated {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.detail-notes {
+  margin: 0;
+  line-height: 1.5;
+  font-size: 0.9rem;
+  white-space: pre-line;
+
+  &.muted {
+    color: var(--muted);
+  }
+}
+.detail-image {
+  margin: 0;
+
+  img {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  figcaption {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 0.3rem;
+  }
+}

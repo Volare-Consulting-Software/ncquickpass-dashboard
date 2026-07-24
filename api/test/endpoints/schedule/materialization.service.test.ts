@@ -1,6 +1,6 @@
 import { MaterializationService } from '../../../src/endpoints/schedule/materialization.service';
 import { DbClient } from '../../../src/database/db-client';
-import { NcqpService } from '../../../src/endpoints/ncqp/ncqp.service';
+import { NcqpHovClient } from '../../../src/endpoints/ncqp/ncqp-hov.client';
 import { DeclarationStatus } from '../../../src/endpoints/schedule/schedule.constants';
 
 const CTX = { token: 't', userId: 'u', accountId: 'ACC' };
@@ -26,7 +26,7 @@ function makeMocks(schedule: unknown, existing: unknown[]) {
   };
   const service = new MaterializationService(
     db as unknown as DbClient,
-    ncqp as unknown as NcqpService,
+    ncqp as unknown as NcqpHovClient,
   );
   return { db, ncqp, service };
 }

@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DbClient } from '../../database/db-client';
-import { NcqpService } from '../ncqp/ncqp.service';
+import { NcqpHovClient } from '../ncqp/ncqp-hov.client';
 import { computeWindows, parseRanges, WindowDay } from './schedule-window';
 import { overlaps } from './conflict';
 import { DeclarationSource, DeclarationStatus } from './schedule.constants';
@@ -54,7 +54,7 @@ export class MaterializationService {
 
   constructor(
     private readonly db: DbClient,
-    private readonly ncqp: NcqpService,
+    private readonly ncqp: NcqpHovClient,
   ) {}
 
   /** Reconcile every enabled schedule for the tenant. */

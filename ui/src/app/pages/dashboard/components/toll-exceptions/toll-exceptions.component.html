@@ -1,0 +1,84 @@
+<section class="card">
+  <header class="card-head">
+    <div class="head-main">
+      <h2>Disputes / Violations</h2>
+      <p class="hint">Your filed disputes and HOV violations.</p>
+    </div>
+  </header>
+
+  <div class="section">
+    <h3 class="section-title">Disputes</h3>
+    @if (loading) {
+      <p class="empty">Loading…</p>
+    } @else if (disputes.length === 0) {
+      <p class="empty">No disputes filed.</p>
+    } @else {
+      <ul class="rows">
+        @for (dispute of disputes; track dispute.caseNumber) {
+          <li>
+            <button class="row" type="button" (click)="open(dispute)">
+              <span class="row-main">
+                <span class="row-title">Case {{ dispute.caseNumber }}</span>
+                @if (dispute.createdDate) {
+                  <span class="row-sub">{{ dispute.createdDate | date: 'MMM d, y' }}</span>
+                }
+              </span>
+              <span class="badge" [class]="badgeClass(dispute)">{{ badgeLabel(dispute) }}</span>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+
+  <div class="section">
+    <h3 class="section-title">HOV violations</h3>
+    @if (violations.length === 0) {
+      <p class="empty">No HOV violations.</p>
+    } @else {
+      <ul class="rows">
+        @for (violation of violations; track $index) {
+          <li class="violation">
+            <span class="row-main">
+              <span class="row-title">{{ violation.exitLocation }}</span>
+              <span class="row-sub">{{ violation.transactionDate | date: 'MMM d, y · h:mm a' }}</span>
+            </span>
+            <span class="v-amt">{{ violation.debitAmount | currency }}</span>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+</section>
+
+<app-drawer
+  [open]="selected() !== null"
+  [title]="'Case ' + (selected()?.caseNumber ?? '')"
+  (close)="close()"
+>
+  @if (selected(); as dispute) {
+    <div class="detail">
+      <div class="detail-status">
+        <span class="badge" [class]="badgeClass(dispute)">{{ badgeLabel(dispute) }}</span>
+        @if (dispute.lastUpdated) {
+          <span class="detail-updated">Updated {{ dispute.lastUpdated }}</span>
+        }
+      </div>
+
+      @if (dispute.decisionNotes) {
+        <p class="detail-notes">{{ dispute.decisionNotes }}</p>
+      } @else {
+        <p class="detail-notes muted">
+          No agency response yet. Their decision will appear here once they respond.
+        </p>
+      }
+
+      @if (dispute.attachmentDocumentId) {
+        <figure class="detail-image">
+          <img [src]="imageUrl(dispute.attachmentDocumentId)" alt="Vehicle image attached to the case" />
+          <figcaption>Vehicle image provided by NC Quick Pass.</figcaption>
+        </figure>
+      }
+    </div>
+  }
+</app-drawer>

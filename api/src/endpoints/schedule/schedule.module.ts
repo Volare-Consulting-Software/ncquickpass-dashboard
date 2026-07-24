@@ -11,7 +11,7 @@ import { ScheduleCron } from './schedule.cron';
 /**
  * Weekly HOV schedule: persistence, materialization into NCQP declarations, the
  * encrypted credential vault, and the background reconcile cron. DbClient
- * comes from the global DatabaseModule; NcqpService from NcqpModule.
+ * comes from the global DatabaseModule; the NCQP clients from NcqpModule.
  */
 @Module({
   imports: [NcqpModule, AuthModule],

@@ -66,7 +66,10 @@
         [dayOptions]="dayOptions"
         [loading]="txLoading()"
         (daysChange)="changeDays($event)"
+        (openDispute)="openDispute($event)"
       />
+
+      <app-toll-exceptions [disputes]="disputes()" [violations]="violations()" />
     </div>
   }
 </main>
@@ -79,4 +82,12 @@
   (close)="closeScheduled()"
   (saved)="onScheduleSaved($event)"
   (cancelUpcoming)="onCancelUpcoming($event)"
+/>
+
+<app-dispute-drawer
+  [trip]="disputeTrip()"
+  [reasons]="reasons()"
+  [busy]="disputeBusy()"
+  (submitDispute)="onSubmitDispute($event)"
+  (close)="closeDispute()"
 />
