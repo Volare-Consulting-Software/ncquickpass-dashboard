@@ -17,14 +17,10 @@ export interface ComputeWindowsInput {
 
 /** A concrete occurrence to materialize, as an absolute UTC interval. */
 export interface MaterializationWindow {
-  /** The occurrence's true bounds — stable across runs, so they identify it. */
   start: Date;
   end: Date;
-  /**
-   * Earliest instant NCQP will accept for this occurrence: `start`, or
-   * `now + lead` when `start` has already passed. Use it for the NCQP call
-   * only — never to identify the window.
-   */
+  /** `start`, or `now + lead` when `start` has passed. For the NCQP call only
+   *  — it moves every run, so it can never identify the window. */
   activationStart: Date;
 }
 
@@ -44,11 +40,8 @@ export function parseRanges(value: unknown): { startMinute: number; endMinute: n
  * horizon, honoring the schedule's timezone (DST-safe via luxon). Windows that
  * have already ended are dropped.
  *
- * `start`/`end` are the occurrence's true bounds and depend only on the
- * schedule and the calendar day, never on the clock — that is what lets the
- * reconciler recognize a window it already materialized. The clamp to
- * `now + lead` that NCQP requires lives in `activationStart` instead, because
- * it moves on every run.
+ * `start`/`end` depend only on the schedule and the calendar day, never on the
+ * clock, so the reconciler can recognize a window it already materialized.
  *
  * Pure and deterministic given `now` — unit-tested in isolation.
  */

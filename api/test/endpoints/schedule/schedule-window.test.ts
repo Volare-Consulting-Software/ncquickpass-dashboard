@@ -65,14 +65,13 @@ describe('computeWindows', () => {
     expect(windows[0].activationStart.toISOString()).toBe(
       '2026-07-15T12:15:00.000Z',
     );
-    // The occurrence itself keeps its scheduled start, so it stays identifiable.
     expect(windows[0].start.toISOString()).toBe('2026-07-15T12:01:00.000Z');
   });
 
   it('computeWindows_startAlreadyPassed_keepsScheduledStartAndClampsActivation', () => {
     const windows = computeWindows(
       input({
-        days: [{ dayOfWeek: 3, allDay: true, ranges: [] }], // today, all day — started at midnight
+        days: [{ dayOfWeek: 3, allDay: true, ranges: [] }],
       }),
       SUMMER_NOW,
     );

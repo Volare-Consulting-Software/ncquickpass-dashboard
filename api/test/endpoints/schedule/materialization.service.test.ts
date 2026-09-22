@@ -96,7 +96,6 @@ describe('MaterializationService.reconcileSchedule', () => {
   });
 });
 
-/** The slice of an `upsert` argument this suite reads back. */
 interface UpsertArg {
   create: { windowStart: Date; windowEnd: Date; ncqpDeclarationId: string };
 }
@@ -115,7 +114,6 @@ describe('MaterializationService.reconcileSchedule across consecutive daily runs
   const FIRST_RUN = new Date('2026-07-15T07:00:00.000Z');
   const SECOND_RUN = new Date('2026-07-16T07:00:00.123Z');
 
-  /** The rows a run persisted, shaped as `existing` for the next run's diff. */
   function rowsFrom(db: ReturnType<typeof makeMocks>['db']) {
     const calls = db.hOVDeclaration.upsert.mock
       .calls as unknown as UpsertArg[][];
@@ -134,7 +132,6 @@ describe('MaterializationService.reconcileSchedule across consecutive daily runs
     const persisted = rowsFrom(first.db);
 
     jest.setSystemTime(SECOND_RUN);
-    // Only rows the service itself would still see: windowEnd in the future.
     const stillFuture = persisted.filter((row) => row.windowEnd >= SECOND_RUN);
     const second = makeMocks(schedule, stillFuture);
     const result = await second.service.reconcileSchedule(CTX, 's1');
