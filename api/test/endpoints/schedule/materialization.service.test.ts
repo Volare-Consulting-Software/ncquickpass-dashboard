@@ -95,3 +95,54 @@ describe('MaterializationService.reconcileSchedule', () => {
     expect(result).toEqual({ created: 0, canceled: 0 });
   });
 });
+
+/** The slice of an `upsert` argument this suite reads back. */
+interface UpsertArg {
+  create: { windowStart: Date; windowEnd: Date; ncqpDeclarationId: string };
+}
+
+describe('MaterializationService.reconcileSchedule across consecutive daily runs', () => {
+  const schedule = {
+    id: 's1',
+    accountId: 'ACC',
+    enabled: true,
+    transponderNumber: 'TAG1',
+    timezone: TZ,
+    horizonDays: 7,
+    days: allDayWeek(),
+  };
+  // Two 03:00 America/New_York cron runs a day apart (EDT, UTC-4).
+  const FIRST_RUN = new Date('2026-07-15T07:00:00.000Z');
+  const SECOND_RUN = new Date('2026-07-16T07:00:00.123Z');
+
+  /** The rows a run persisted, shaped as `existing` for the next run's diff. */
+  function rowsFrom(db: ReturnType<typeof makeMocks>['db']) {
+    const calls = db.hOVDeclaration.upsert.mock
+      .calls as unknown as UpsertArg[][];
+    return calls.map(([arg], index) => ({
+      id: `row${index}`,
+      windowStart: arg.create.windowStart,
+      windowEnd: arg.create.windowEnd,
+      ncqpDeclarationId: String(arg.create.ncqpDeclarationId),
+    }));
+  }
+
+  it('reconcileSchedule_secondDailyRunUnchangedSchedule_addsHorizonDayAndCancelsNothing', async () => {
+    jest.useFakeTimers({ now: FIRST_RUN });
+    const first = makeMocks(schedule, []);
+    await first.service.reconcileSchedule(CTX, 's1');
+    const persisted = rowsFrom(first.db);
+
+    jest.setSystemTime(SECOND_RUN);
+    // Only rows the service itself would still see: windowEnd in the future.
+    const stillFuture = persisted.filter((row) => row.windowEnd >= SECOND_RUN);
+    const second = makeMocks(schedule, stillFuture);
+    const result = await second.service.reconcileSchedule(CTX, 's1');
+    jest.useRealTimers();
+
+    expect(result.canceled).toBe(0);
+    expect(second.ncqp.cancelHov).not.toHaveBeenCalled();
+    // The horizon rolled forward one day; every other window already existed.
+    expect(result.created).toBe(1);
+  });
+});

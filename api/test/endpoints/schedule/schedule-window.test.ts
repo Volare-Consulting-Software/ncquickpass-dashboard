@@ -53,7 +53,7 @@ describe('computeWindows', () => {
     expect(windows).toHaveLength(0);
   });
 
-  it('computeWindows_startWithinLeadTime_pushesStartToNowPlusLead', () => {
+  it('computeWindows_startWithinLeadTime_clampsActivationStartOnly', () => {
     const windows = computeWindows(
       input({
         days: [{ dayOfWeek: 3, allDay: false, ranges: [{ startMinute: 481, endMinute: 600 }] }], // 08:01, 1 min from now
@@ -62,7 +62,41 @@ describe('computeWindows', () => {
     );
     expect(windows).toHaveLength(1);
     // now (12:00:00Z) + 15 min lead
-    expect(windows[0].start.toISOString()).toBe('2026-07-15T12:15:00.000Z');
+    expect(windows[0].activationStart.toISOString()).toBe(
+      '2026-07-15T12:15:00.000Z',
+    );
+    // The occurrence itself keeps its scheduled start, so it stays identifiable.
+    expect(windows[0].start.toISOString()).toBe('2026-07-15T12:01:00.000Z');
+  });
+
+  it('computeWindows_startAlreadyPassed_keepsScheduledStartAndClampsActivation', () => {
+    const windows = computeWindows(
+      input({
+        days: [{ dayOfWeek: 3, allDay: true, ranges: [] }], // today, all day — started at midnight
+      }),
+      SUMMER_NOW,
+    );
+    expect(windows).toHaveLength(1);
+    expect(windows[0].start.toISOString()).toBe('2026-07-15T04:00:00.000Z'); // midnight EDT
+    expect(windows[0].activationStart.toISOString()).toBe(
+      '2026-07-15T12:15:00.000Z',
+    );
+  });
+
+  it('computeWindows_sameScheduleDifferentClockTimes_yieldsIdenticalBounds', () => {
+    const schedule = input({
+      days: [{ dayOfWeek: 3, allDay: true, ranges: [] }],
+    });
+    const early = computeWindows(
+      schedule,
+      new Date('2026-07-15T07:00:00.000Z'),
+    );
+    const later = computeWindows(
+      schedule,
+      new Date('2026-07-15T09:30:00.456Z'),
+    );
+    expect(early[0].start).toEqual(later[0].start);
+    expect(early[0].end).toEqual(later[0].end);
   });
 
   it('computeWindows_respectsDaylightSaving_usesStandardOffsetInWinter', () => {

@@ -99,6 +99,9 @@ export class MaterializationService {
       },
     });
 
+    // Identity is the occurrence's true bounds, never the activation-clamped
+    // start — that moves every run and would churn the window through a
+    // cancel/recreate on each pass.
     const keyOf = (start: Date, end: Date): string => `${start.getTime()}_${end.getTime()}`;
     const desiredMap = new Map(desired.map((w) => [keyOf(w.start, w.end), w]));
     const existingKeys = new Set(existing.map((e) => keyOf(e.windowStart, e.windowEnd)));
@@ -106,12 +109,15 @@ export class MaterializationService {
     let created = 0;
     for (const [key, window] of desiredMap) {
       if (existingKeys.has(key)) continue;
+      // Too little of the window left for NCQP's activation lead. Leave it
+      // alone rather than declaring a window that ends before it starts.
+      if (window.activationStart >= window.end) continue;
       try {
         const declarationId = await this.ncqp.activateHov(ctx.token, {
           accountId: ctx.accountId,
           transponderNumber: schedule.transponderNumber,
           location: this.roads.defaultHovLocation(),
-          startDateTime: window.start.toISOString(),
+          startDateTime: window.activationStart.toISOString(),
           endDateTime: window.end.toISOString(),
           createdByUserId: ctx.userId,
           option: 'DateInTheFuture',
