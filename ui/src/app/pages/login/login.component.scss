@@ -53,6 +53,40 @@
     margin-top: 0.5rem;
   }
 
+  .password-field {
+    position: relative;
+    display: flex;
+
+    input {
+      flex: 1;
+      min-width: 0;
+      padding-right: 2.5rem;
+    }
+
+    .password-toggle {
+      position: absolute;
+      top: 50%;
+      right: 0.3rem;
+      transform: translateY(-50%);
+      margin: 0;
+      padding: 0.3rem;
+      display: inline-flex;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+
+      &:hover:not(:disabled),
+      &:focus-visible {
+        color: var(--text);
+      }
+
+      &:disabled {
+        cursor: default;
+        opacity: 0.5;
+      }
+    }
+  }
+
   .fineprint {
     font-size: 0.72rem;
     color: var(--muted);

@@ -2,12 +2,13 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { EyeIconComponent } from '../../shared/eye-icon/eye-icon.component';
 import { NcqpLogoComponent } from '../../shared/ncqp-logo/ncqp-logo.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, NcqpLogoComponent],
+  imports: [FormsModule, EyeIconComponent, NcqpLogoComponent],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
 })
@@ -19,6 +20,11 @@ export class LoginComponent {
   password = '';
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+  readonly showPassword = signal(false);
+
+  togglePassword(): void {
+    this.showPassword.update((shown) => !shown);
+  }
 
   submit(): void {
     if (!this.username || !this.password || this.loading()) return;
