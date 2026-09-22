@@ -104,15 +104,16 @@ export class MaterializationService {
     const existingKeys = new Set(existing.map((e) => keyOf(e.windowStart, e.windowEnd)));
 
     let created = 0;
-    for (const [key, window] of desiredMap) {
-      if (existingKeys.has(key)) continue;
+    for (const [key, { start, end, activationStart }] of desiredMap) {
+      // Skip what already exists, and what has too little left to clear the lead.
+      if (existingKeys.has(key) || activationStart >= end) continue;
       try {
         const declarationId = await this.ncqp.activateHov(ctx.token, {
           accountId: ctx.accountId,
           transponderNumber: schedule.transponderNumber,
           location: this.roads.defaultHovLocation(),
-          startDateTime: window.start.toISOString(),
-          endDateTime: window.end.toISOString(),
+          startDateTime: activationStart.toISOString(),
+          endDateTime: end.toISOString(),
           createdByUserId: ctx.userId,
           option: 'DateInTheFuture',
         });
@@ -121,8 +122,8 @@ export class MaterializationService {
             accountId_transponderNumber_windowStart_windowEnd: {
               accountId: ctx.accountId,
               transponderNumber: schedule.transponderNumber,
-              windowStart: window.start,
-              windowEnd: window.end,
+              windowStart: start,
+              windowEnd: end,
             },
           },
           create: {
@@ -130,8 +131,8 @@ export class MaterializationService {
             scheduleId: schedule.id,
             source: DeclarationSource.Weekly,
             transponderNumber: schedule.transponderNumber,
-            windowStart: window.start,
-            windowEnd: window.end,
+            windowStart: start,
+            windowEnd: end,
             ncqpDeclarationId: String(declarationId),
             status: DeclarationStatus.Materialized,
           },
@@ -145,7 +146,7 @@ export class MaterializationService {
         created++;
       } catch (err) {
         this.logger.warn(
-          `Materialize failed for ${schedule.transponderNumber} @ ${window.start.toISOString()}: ${
+          `Materialize failed for ${schedule.transponderNumber} @ ${start.toISOString()}: ${
             err instanceof Error ? err.message : String(err)
           }`,
         );

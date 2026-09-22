@@ -19,6 +19,9 @@ export interface ComputeWindowsInput {
 export interface MaterializationWindow {
   start: Date;
   end: Date;
+  /** `start`, or `now + lead` when `start` has passed. For the NCQP call only
+   *  — it moves every run, so it can never identify the window. */
+  activationStart: Date;
 }
 
 /** Coerce a stored JSON `ranges` value into typed range objects. */
@@ -35,8 +38,10 @@ export function parseRanges(value: unknown): { startMinute: number; endMinute: n
 /**
  * Expand a recurring weekly schedule into concrete UTC windows across the
  * horizon, honoring the schedule's timezone (DST-safe via luxon). Windows that
- * have already ended are dropped; a window starting within the activation lead
- * time is pushed to `now + lead` so NCQP will accept it.
+ * have already ended are dropped.
+ *
+ * `start`/`end` depend only on the schedule and the calendar day, never on the
+ * clock, so the reconciler can recognize a window it already materialized.
  *
  * Pure and deterministic given `now` — unit-tested in isolation.
  */
@@ -62,11 +67,14 @@ export function computeWindows(
       const end = date.plus({ minutes: range.endMinute });
       if (end <= nowDt) continue; // already over
 
-      let start = date.plus({ minutes: range.startMinute });
-      if (start < earliestStart) start = earliestStart; // respect activation lead
-      if (start >= end) continue;
+      const start = date.plus({ minutes: range.startMinute });
+      const activationStart = start < earliestStart ? earliestStart : start;
 
-      windows.push({ start: start.toUTC().toJSDate(), end: end.toUTC().toJSDate() });
+      windows.push({
+        start: start.toUTC().toJSDate(),
+        end: end.toUTC().toJSDate(),
+        activationStart: activationStart.toUTC().toJSDate(),
+      });
     }
   }
   return windows;
