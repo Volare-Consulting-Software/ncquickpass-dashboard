@@ -6,6 +6,12 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosError, AxiosInstance } from 'axios';
+import { Agent } from 'node:https';
+import { rootCertificates } from 'node:tls';
+import { NCQP_INTERMEDIATE_CA } from './ncqp-intermediate-ca';
+
+// Node's default roots plus the intermediate NCQP fails to send (see NCQP_INTERMEDIATE_CA).
+const NCQP_HTTPS_AGENT = new Agent({ ca: [...rootCertificates, NCQP_INTERMEDIATE_CA] });
 
 /**
  * Shared plumbing for the per-domain NC Quick Pass clients: one axios instance
@@ -23,6 +29,7 @@ export abstract class NcqpClient {
     this.http = axios.create({
       baseURL: this.config.get<string>('NCQP_BASE_URL', 'https://secure.ncquickpass.com'),
       timeout: 20000,
+      httpsAgent: NCQP_HTTPS_AGENT,
     });
     this.clientId = this.config.get<string>('NCQP_CLIENT_ID', 'AMSExternalngAuthApp');
   }
